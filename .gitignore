@@ -12,9 +12,6 @@
 /javadoc/
 
 # Eclipse files #
-/iot-sc-template-library/.classpath
-/iot-sc-template-library/.project
-#/iot-sc-template-library/.settings
 /iot-sc-template-library/bin/*
 /iot-sc-template-library/src-gen/*
 
