@@ -106,7 +106,7 @@
                   <styles xsi:type="notation:ShapeStyle" xmi:id="_AP-0pFsHEe27NrGh0QYi0g" fontName="Verdana" fontHeight="10" fillColor="15720400" lineColor="12632256"/>
                   <styles xsi:type="notation:FontStyle" xmi:id="_AP-0pVsHEe27NrGh0QYi0g"/>
                   <styles xsi:type="notation:BooleanValueStyle" xmi:id="_AP-0plsHEe27NrGh0QYi0g" name="isHorizontal" booleanValue="true"/>
-                  <layoutConstraint xsi:type="notation:Bounds" xmi:id="_AP-0p1sHEe27NrGh0QYi0g" x="116" y="139" width="129" height="69"/>
+                  <layoutConstraint xsi:type="notation:Bounds" xmi:id="_AP-0p1sHEe27NrGh0QYi0g" x="116" y="139" width="148" height="41"/>
                 </children>
                 <layoutConstraint xsi:type="notation:Bounds" xmi:id="_8IurUVsGEe27NrGh0QYi0g"/>
               </children>

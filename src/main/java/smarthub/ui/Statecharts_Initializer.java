@@ -1031,8 +1031,6 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
         //FIRE ALARM SENSORS TRIGGERED
 
-
-
 		/*if(fireAlarm_sensors_triggered) {
 			boolean smoke_presence = SmartHubSystem.getSF().getFireAlarm().sensors().getSmoke_presence(),
 					carbon_presence = SmartHubSystem.getSF().getFireAlarm().sensors().getCarbon_presence(),
@@ -1225,7 +1223,19 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
      SMART LIGHTS SYSTEM DATA MANAGEMENT PANEL
      * **/
 
-    public void readSmartLightSystemDATA(SmartHubSystem SmartHubSystem) throws ExecutionException, InterruptedException {
+    public void readSmartLightSystemDATA(SmartHubSystem SmartHubSystem) throws ExecutionException, InterruptedException, IOException {
+        BufferedReader br = new BufferedReader(new FileReader("~/"));
+        try {
+            String line = br.readLine();
+            String lastLine = "";
+
+            while (line != null) {
+                lastLine = line;
+            }
+            System.out.println(lastLine);
+        } finally {
+            br.close();
+        }
 
         Light_status = SmartHubSystem.smartLightsHUB().getOn();
         Light_usage = SmartHubSystem.getSL_HUB().getInUSE();
