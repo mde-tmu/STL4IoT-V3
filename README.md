@@ -18,7 +18,7 @@ John-Clyde Rempillo B.Sc.
 
 Zenan Zha B.Sc.
 ## Main Github Webpage
-[Click here to visit the main webpage](https://mde-tmu.github.io/STL4IoT/) (Need update, Still useful.)
+[Click here to visit the main webpage](https://mde-tmu.github.io/STL4IoT/) (Needs update, but Still useful.)
 
 ## Installation
 
