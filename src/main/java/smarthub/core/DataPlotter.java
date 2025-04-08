@@ -173,14 +173,14 @@ public class DataPlotter extends DashboardFrame_Editor {
 	   	
 
        // row keys...
-       sensor1 = "Carbon Sensor";
+       sensor1 = "Flame Sensor";
        sensor2 = "Smoke Sensor";
        sensor3 = "Heat Sensor";
 
        // create the dataset...
        dataset = new DefaultCategoryDataset();
        
-       dataset.setValue(sensor1_val, sensor1, "Carbon");
+       dataset.setValue(sensor1_val, sensor1, "Flame");
        dataset.setValue(sensor2_val, sensor2, "Smoke");
        dataset.setValue(sensor3_val, sensor3, "Heat");
        

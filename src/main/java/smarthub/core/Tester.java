@@ -25,7 +25,7 @@ public class Tester extends DashboardFrame_Editor{
 				testButton2.addActionListener(new ActionListener(){
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
-						SmartHubSystem.getSF().getCarbonSensor().setCounter(0);
+						SmartHubSystem.getSF().getFlameSensor().setCounter(0);
 						System.out.println("CLICKED");
 					}
 		        });

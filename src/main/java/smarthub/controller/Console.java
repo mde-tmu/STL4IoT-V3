@@ -64,7 +64,7 @@ public class Console {
 
     public static double total_HUB_power, current_Power;
 
-    protected static long CarbonSensor_detection = 14, SmokeSensor_detection = 8, HeatSensor_detection = 10;
+    protected static long FlameSensor_detection = 14, SmokeSensor_detection = 8, HeatSensor_detection = 10;
 
     protected boolean fireAlarm_status;
     protected boolean fireAlarm_sensors_triggered;
@@ -109,7 +109,7 @@ public class Console {
     protected static Actuator_Component_2 SGD_Actuator;
     protected static Controller_Component SF_Controller, STV_Controller, SL_Controller, SMW_Controller, MotionDetector_Controller;
     protected static Controller_Component_2 SGD_Controller;
-    protected static Sensor_Component CarbonSensor, HeatSensor, SmokeSensor, STV_Sensor, SMW_Sensor, SGD_Sensor;
+    protected static Sensor_Component FlameSensor, HeatSensor, SmokeSensor, STV_Sensor, SMW_Sensor, SGD_Sensor;
     protected static DeviceTemp_Component SF_Temperature, STV_Temperature, SL_Temperature, SMW_Temperature, SGD_Temperature;
     protected static Power_Component SF_Power, STV_Power, SL_Power, SMW_Power, SGD_Power, MotionDetector_Power;
     protected static Network_Component SF_WiFi, STV_WiFi, SL_WiFi, SMW_WiFi, SGD_WiFi, HUB_WiFi;
@@ -219,7 +219,7 @@ public class Console {
         MotionDetector_Controller = new Controller_Component();
 
         SmokeSensor = new Sensor_Component();
-        CarbonSensor = new Sensor_Component();
+        FlameSensor = new Sensor_Component();
         HeatSensor = new Sensor_Component();
         STV_Sensor = new Sensor_Component();
         SMW_Sensor = new Sensor_Component();
@@ -292,7 +292,7 @@ public class Console {
         MotionDetector_Controller.setTimerService(new ScaledTimeTimerService(1.0));
 
         SmokeSensor.setTimerService(new ScaledTimeTimerService(1.0));
-        CarbonSensor.setTimerService(new ScaledTimeTimerService(1.0));
+        FlameSensor.setTimerService(new ScaledTimeTimerService(1.0));
         HeatSensor.setTimerService(new ScaledTimeTimerService(1.0));
         STV_Sensor.setTimerService(new ScaledTimeTimerService(1.0));
         SMW_Sensor.setTimerService(new ScaledTimeTimerService(1.0));
@@ -353,7 +353,7 @@ public class Console {
         SmartHubSystem.getSGD().setGarageDoor(GarageDoor);
 
         //Setting up ACTUATOR Component for each system
-        SmartHubSystem.getSF().setActuator(SF_Actuator);
+//        SmartHubSystem.getSF().setActuator(SF_Actuator);
         SmartHubSystem.getSTV().setActuator(STV_Actuator);
         SmartHubSystem.getSL_HUB().getLED1().setActuator(MotionDetector_Actuator);
         SmartHubSystem.getSL_HUB().getLED2().setActuator(MotionDetector_Actuator);
@@ -361,7 +361,7 @@ public class Console {
         SmartHubSystem.getSGD().setActuator(SGD_Actuator);
 
         //Setting up CONTROLLER Component for each system
-        SmartHubSystem.getSF().setController(SF_Controller);
+//        SmartHubSystem.getSF().setController(SF_Controller);
         SmartHubSystem.getSTV().setController(STV_Controller);
         SmartHubSystem.getSL_HUB().getLED1().setController(MotionDetector_Controller);
         SmartHubSystem.getSL_HUB().getLED2().setController(MotionDetector_Controller);
@@ -369,9 +369,9 @@ public class Console {
         SmartHubSystem.getSGD().setController(SGD_Controller);
 
         //Setting up SENSOR Component for each system
-        SmartHubSystem.getSF().setCarbonSensor(CarbonSensor);
-        SmartHubSystem.getSF().setSmokeSensor(SmokeSensor);
-        SmartHubSystem.getSF().setHeatSensor(HeatSensor);
+//        SmartHubSystem.getSF().setFlameSensor(FlameSensor);
+//        SmartHubSystem.getSF().setSmokeSensor(SmokeSensor);
+//        SmartHubSystem.getSF().setHeatSensor(HeatSensor);
         SmartHubSystem.getSTV().setSensor(STV_Sensor);
 
         SmartHubSystem.getSL_HUB().getLED1().setMotionDetector(US_MotionDetector);
@@ -476,11 +476,11 @@ public class Console {
     public static void randomTimerValues(SmartHubSystem SmartHubSystem, Random r) {
         //SMARTFIRE SENSOR TIMEOUTS
         SmartHubSystem.getSF().sensorInput().setSmoke_detection_time(SmokeSensor_detection);
-        SmartHubSystem.getSF().sensorInput().setCarbon_detection_time(CarbonSensor_detection);
+        SmartHubSystem.getSF().sensorInput().setFlame_detection_time(FlameSensor_detection);
         SmartHubSystem.getSF().sensorInput().setHeat_detection_time(HeatSensor_detection);
 
         SmartHubSystem.getSF().getFireAlarm().sensors().setSmoke_increment(r.nextInt(10 - 1) + 1);
-        SmartHubSystem.getSF().getFireAlarm().sensors().setCarbon_increment(r.nextInt(10 - 1) + 1);
+        SmartHubSystem.getSF().getFireAlarm().sensors().setFlame_increment(r.nextInt(10 - 1) + 1);
         SmartHubSystem.getSF().getFireAlarm().sensors().setHeat_increment(r.nextInt(10 - 1) + 1);
 
         //WIFI TIMEOUTS
@@ -628,7 +628,7 @@ public class Console {
                 sensor2 = new Random().nextInt(100),
                 sensor3 = new Random().nextInt(100);
 
-        Statecharts_Initializer.SensorLog.add("(Carbon,Smoke,Heat): ("+sensor1+","+sensor2+","+sensor3+")\n");
+        Statecharts_Initializer.SensorLog.add("(Flame,Smoke,Heat): ("+sensor1+","+sensor2+","+sensor3+")\n");
 
         ReportLogSaver.SaveSensorData(SensorLog);
 
@@ -637,21 +637,21 @@ public class Console {
 //        DataPlotter.sensor3_val = sensor3;
 //
 //        //Setting values onto the bar graph
-//        DataPlotter.dataset.setValue(DataPlotter.sensor1_val, DataPlotter.sensor1, "Carbon");
+//        DataPlotter.dataset.setValue(DataPlotter.sensor1_val, DataPlotter.sensor1, "Flame");
 //        DataPlotter.dataset.setValue(DataPlotter.sensor2_val, DataPlotter.sensor2, "Smoke");
 //        DataPlotter.dataset.setValue(DataPlotter.sensor3_val, DataPlotter.sensor3, "Heat");
 //
 //        DataPlotter.ChangeColour(DataPlotter.sensor1_val, DataPlotter.sensor2_val, DataPlotter.sensor3_val);
 
         //Firebase - Update FireAlarm Sensor Data
-        SmartFireSystemDB.update("Carbon", sensor1);
+        SmartFireSystemDB.update("Flame", sensor1);
         SmartFireSystemDB.update("Smoke", sensor2);
         SmartFireSystemDB.update("Heat", sensor3);
 
-        SmartHubSystem.getSF().getFireAlarm().sensors().setCarbon_threshold(100);
+        SmartHubSystem.getSF().getFireAlarm().sensors().setFlame_threshold(100);
         SmartHubSystem.getSF().getFireAlarm().sensors().setSmoke_threshold(100);
 
-        fireAlarm_status = SmartHubSystem.getSF().getFireAlarm().alarm().getSound();
+//        fireAlarm_status = SmartHubSystem.getSF().getFireAlarm().alarm().getSound();
         fireAlarm_sensors_triggered = SmartHubSystem.getSF().getFireAlarm().sensors().getTriggerSignal_received();
         //SAFE or WARNING or DANGER MODE
         String mode_status = SmartHubSystem.getSF().getFireAlarm().message().getStatus();

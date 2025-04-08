@@ -48,6 +48,8 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
     private DocumentReference System_Control,
             SmartFireSystemDB, SmartTVSystemDB, SmartLightSystemDB, SmartMicrowaveSystemDB, SmartGarageDoorSystemDB;
 
+    private boolean sys_fire_status = true;
+
     private static final long serialVersionUID = -8909693541678814631L;
     public static String AudioFilePath;
     public static Clip clip;
@@ -70,7 +72,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
     public static double total_HUB_power, current_Power;
 
-    protected static long CarbonSensor_detection = 14, SmokeSensor_detection = 8, HeatSensor_detection = 10;
+    protected static long FlameSensor_detection = 14, SmokeSensor_detection = 8, HeatSensor_detection = 10;
 
     protected boolean fireAlarm_status, fireAlarm_sensors_triggered, alarmAudio_Played = false,
             TV_status, TV_usage,
@@ -78,6 +80,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
             Microwave_status, Microwave_usage,
             GarageDoor_status, GarageDoor_usage, GarageDoor_block,
             Main_Switch_DB, SF_status_DB, STV_status_DB, SL_status_DB, SMW_status_DB, SGD_status_DB,
+            firebase_fire_alarm_snooze,
             firebase_door_blocked, firebase_status_door, firebase_garage_door_sync,
             firebase_TV_status_system, firebase_TV_usage_tv,
             firebase_light_status_system, firebase_light_master_switch;
@@ -103,11 +106,12 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
     protected static Environment Environment;
 
     //Atomic Components used in the Smart Systems
-    protected static Actuator_Component SF_Actuator, STV_Actuator, SL_Actuator, SMW_Actuator, MotionDetector_Actuator;
-    protected static Actuator_Component_2 SGD_Actuator;
+    protected static Actuator_Component STV_Actuator, SL_Actuator, SMW_Actuator, MotionDetector_Actuator;
+    protected static Actuator_Component_2 SF_Actuator, SGD_Actuator;
     protected static Controller_Component SF_Controller, STV_Controller, SL_Controller, SMW_Controller, MotionDetector_Controller;
     protected static Controller_Component_2 SGD_Controller;
-    protected static Sensor_Component CarbonSensor, HeatSensor, SmokeSensor, STV_Sensor, SMW_Sensor, SGD_Sensor;
+    protected static Sensor_Component STV_Sensor, SMW_Sensor, SGD_Sensor;
+    protected static Sensor_Component_Fire FlameSensor, HeatSensor, SmokeSensor;
     protected static DeviceTemp_Component SF_Temperature, STV_Temperature, SL_Temperature, SMW_Temperature, SGD_Temperature;
     protected static Power_Component SF_Power, STV_Power, SL_Power, SMW_Power, SGD_Power, MotionDetector_Power;
     protected static Network_Component SF_WiFi, STV_WiFi, SL_WiFi, SMW_WiFi, SGD_WiFi, HUB_WiFi;
@@ -198,7 +202,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         //END OF MAIN SYSTEM and UNIT STATECHART FUNCTIONS
 
         //ATOMIC COMPONENTS
-        SF_Actuator = new Actuator_Component();
+        SF_Actuator = new Actuator_Component_2();
         STV_Actuator = new Actuator_Component();
         SL_Actuator = new Actuator_Component();
         SMW_Actuator = new Actuator_Component();
@@ -212,9 +216,9 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SGD_Controller = new Controller_Component_2();
         MotionDetector_Controller = new Controller_Component();
 
-        SmokeSensor = new Sensor_Component();
-        CarbonSensor = new Sensor_Component();
-        HeatSensor = new Sensor_Component();
+        SmokeSensor = new Sensor_Component_Fire();
+        FlameSensor = new Sensor_Component_Fire();
+        HeatSensor = new Sensor_Component_Fire();
         STV_Sensor = new Sensor_Component();
         SMW_Sensor = new Sensor_Component();
         SGD_Sensor = new Sensor_Component();
@@ -286,7 +290,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         MotionDetector_Controller.setTimerService(new ScaledTimeTimerService(1.0));
 
         SmokeSensor.setTimerService(new ScaledTimeTimerService(1.0));
-        CarbonSensor.setTimerService(new ScaledTimeTimerService(1.0));
+        FlameSensor.setTimerService(new ScaledTimeTimerService(1.0));
         HeatSensor.setTimerService(new ScaledTimeTimerService(1.0));
         STV_Sensor.setTimerService(new ScaledTimeTimerService(1.0));
         SMW_Sensor.setTimerService(new ScaledTimeTimerService(1.0));
@@ -316,17 +320,15 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SMW_WiFi.setTimerService(new ScaledTimeTimerService(1.0));
         SGD_WiFi.setTimerService(new ScaledTimeTimerService(1.0));
 
-        /**
-         * THIS SECTION SETS EACH STATECHART VARIABLES TO ITS VALUE
-         *
-         * WARNING: Without doing this, each variable declaration will default to NULL
-         * **/
+        // THIS SECTION SETS EACH STATECHART VARIABLES TO ITS VALUE
+        // WARNING: Without doing this, each variable declaration will default to NULL
 
         SmartHubSystem.setPowerManager(HUBPowerManager);
-        //SmartHubSystem.setSF_Environment(Environment);
-        //SmartHubSystem.setSTV_Environment(Environment);
-        //SmartHubSystem.setSL_Environment(Environment);
-        //SmartHubSystem.setSMW_Environment(Environment);
+
+        // SmartHubSystem.setSF_Environment(Environment);
+        // SmartHubSystem.setSTV_Environment(Environment);
+        // SmartHubSystem.setSL_Environment(Environment);
+        // SmartHubSystem.setSMW_Environment(Environment);
 
         SmartHubSystem.setSF(SmartFireSystem);
         SmartHubSystem.setSTV(SmartTVSystem);
@@ -359,7 +361,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSGD().setActuator(SGD_Actuator);
 
         //Setting up CONTROLLER Component for each system
-        SmartHubSystem.getSF().setController(SF_Controller);
+//        SmartHubSystem.getSF().setController(SF_Controller);
         SmartHubSystem.getSTV().setController(STV_Controller);
         SmartHubSystem.getSL_HUB().getLED1().setController(MotionDetector_Controller);
         SmartHubSystem.getSL_HUB().getLED2().setController(MotionDetector_Controller);
@@ -367,7 +369,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSGD().setController(SGD_Controller);
 
         //Setting up SENSOR Component for each system
-        SmartHubSystem.getSF().setCarbonSensor(CarbonSensor);
+        SmartHubSystem.getSF().setFlameSensor(FlameSensor);
         SmartHubSystem.getSF().setSmokeSensor(SmokeSensor);
         SmartHubSystem.getSF().setHeatSensor(HeatSensor);
         SmartHubSystem.getSTV().setSensor(STV_Sensor);
@@ -505,11 +507,11 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
         //SMARTFIRE SENSOR TIMEOUTS
         SmartHubSystem.getSF().sensorInput().setSmoke_detection_time(SmokeSensor_detection);
-        SmartHubSystem.getSF().sensorInput().setCarbon_detection_time(CarbonSensor_detection);
+        SmartHubSystem.getSF().sensorInput().setFlame_detection_time(FlameSensor_detection);
         SmartHubSystem.getSF().sensorInput().setHeat_detection_time(HeatSensor_detection);
 
         SmartHubSystem.getSF().getFireAlarm().sensors().setSmoke_increment(r.nextInt(10 - 1) + 1);
-        SmartHubSystem.getSF().getFireAlarm().sensors().setCarbon_increment(r.nextInt(10 - 1) + 1);
+        SmartHubSystem.getSF().getFireAlarm().sensors().setFlame_increment(r.nextInt(10 - 1) + 1);
         SmartHubSystem.getSF().getFireAlarm().sensors().setHeat_increment(r.nextInt(10 - 1) + 1);
 
         //SmartHubSystem.getSL_HUB().getLED1().getMotionDetector().setSensorData(r.nextInt(1,10));
@@ -597,6 +599,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         //Firebase - Sync SmartHub
         if (SmartHubSystem.isStateActive(State._SMARTHUBSYSTEM__HUBON) != Main_Switch_DB){
             SmartHubSystem.raiseToggle();
+            sys_fire_status = true;
 
             if (!Main_Switch_DB){
                 System_Control.update("sys_fire_status", false);
@@ -604,6 +607,9 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
             } else {
                 System_Control.update("sys_fire_status", true);
                 SmartFireSystemDB.update("status_system", true);
+                if (sys_fire_status) {
+
+                }
             }
             System_Control.update("sys_tv_status", false);
             System_Control.update("sys_light_status", false);
@@ -611,8 +617,15 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
             System_Control.update("sys_garage_door_status", false);
 
         } else{
-            System_Control.update("sys_fire_status", Main_Switch_DB);
-            SmartFireSystemDB.update("status_system", Main_Switch_DB);
+            if (sys_fire_status) {
+                System_Control.update("sys_fire_status", Main_Switch_DB);
+                SmartFireSystemDB.update("status_system", Main_Switch_DB);
+            }
+            else if (!Main_Switch_DB){
+                System_Control.update("sys_fire_status", false);
+                SmartFireSystemDB.update("status_system", false);
+            }
+
             if (STV_status != STV_status_DB){
                 SmartHubSystem.smartTV().raiseToggle();
             }
@@ -944,7 +957,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
      * @throws IOException
      * **/
 
-    public void readSmartFireSystemDATA(SmartHubSystem SmartHubSystem) throws IOException {
+    public void readSmartFireSystemDATA(SmartHubSystem SmartHubSystem) throws IOException, ExecutionException, InterruptedException {
         //FOR AUDIO
         try {
             clip = AudioSystem.getClip();
@@ -959,7 +972,11 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
                 sensor2 = new Random().nextInt(100),
                 sensor3 = new Random().nextInt(100);
 
-        Statecharts_Initializer.SensorLog.add("(Carbon,Smoke,Heat): ("+sensor1+","+sensor2+","+sensor3+")\n");
+//        long 	sensor1 = 200,
+//                sensor2 = 60,
+//                sensor3 = 50;
+
+        Statecharts_Initializer.SensorLog.add("(Flame,Smoke,Heat): ("+sensor1+","+sensor2+","+sensor3+")\n");
 
         ReportLogSaver.SaveSensorData(SensorLog);
 
@@ -968,24 +985,47 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         DataPlotter.sensor3_val = sensor3;
 
         //Setting values onto the bar graph
-        DataPlotter.dataset.setValue(DataPlotter.sensor1_val, DataPlotter.sensor1, "Carbon");
+        DataPlotter.dataset.setValue(DataPlotter.sensor1_val, DataPlotter.sensor1, "Flame");
         DataPlotter.dataset.setValue(DataPlotter.sensor2_val, DataPlotter.sensor2, "Smoke");
         DataPlotter.dataset.setValue(DataPlotter.sensor3_val, DataPlotter.sensor3, "Heat");
 
         DataPlotter.ChangeColour(DataPlotter.sensor1_val, DataPlotter.sensor2_val, DataPlotter.sensor3_val);
 
 //        //Firebase - Update FireAlarm Sensor Data
-//        SmartFireSystemDB.update("Carbon", sensor1);
+//        SmartFireSystemDB.update("Flame", sensor1);
 //        SmartFireSystemDB.update("Smoke", sensor2);
 //        SmartFireSystemDB.update("Heat", sensor3);
+        smartFire_switch.setText("Manually Turn OFF");
+        smartFire_snooze.setText("Pause");
 
-        SmartHubSystem.getSF().getFireAlarm().sensors().setCarbon_threshold(100);
-        SmartHubSystem.getSF().getFireAlarm().sensors().setSmoke_threshold(100);
+        SmartHubSystem.getSF().getFlameSensor().setEnvironmentData(sensor1);
+        SmartHubSystem.getSF().getSmokeSensor().setEnvironmentData(sensor2);
+        SmartHubSystem.getSF().getHeatSensor().setEnvironmentData(sensor3);
 
-        fireAlarm_status = SmartHubSystem.getSF().getFireAlarm().alarm().getSound();
-        fireAlarm_sensors_triggered = SmartHubSystem.getSF().getFireAlarm().sensors().getTriggerSignal_received();
+//        SmartHubSystem.getSF().getFireAlarm().sensors().setFlame_threshold(90);
+//        SmartHubSystem.getSF().getFireAlarm().sensors().setSmoke_threshold(90);
+//        SmartHubSystem.getSF().getFireAlarm().sensors().setHeat_threshold(90);
+
         //SAFE or WARNING or DANGER MODE
         String mode_status = SmartHubSystem.getSF().getFireAlarm().message().getStatus();
+
+//        long test1 = SmartHubSystem.getSF().getFlameSensor().getSensorData();
+//        System.out.println(test1);
+//
+//        fireAlarm_status = SmartHubSystem.getSF().getActuator().getIsTriggered();
+//        System.out.println(fireAlarm_status);
+        if (sensor1 > 95 || sensor2 > 95 || sensor3 > 95) {
+            clip.start();
+        }
+        else {
+            clip.stop();
+        }
+
+        firebase_fire_alarm_snooze = Boolean.TRUE.equals(SmartFireSystemDB.get().get().getBoolean("pause"));
+        if (firebase_fire_alarm_snooze) {
+            SmartFireSystemDB.update("pause", false);
+            SmartHubSystem.getSF().getFireAlarm().mode().raisePause();
+        }
         //smartFire_message.setText("Current Status: "+mode_status);
 
 
@@ -1020,7 +1060,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         }
         else {
             if(SmartHubSystem.getSF().getFireAlarm().getWarned()){
-                //smartFire_message.setBackground(Color.orange.darker());
+                smartFire_message.setBackground(Color.orange.darker());
             }
             //else
             //smartFire_message.setBackground(Color.GREEN.brighter());
@@ -1033,22 +1073,22 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
 		/*if(fireAlarm_sensors_triggered) {
 			boolean smoke_presence = SmartHubSystem.getSF().getFireAlarm().sensors().getSmoke_presence(),
-					carbon_presence = SmartHubSystem.getSF().getFireAlarm().sensors().getCarbon_presence(),
+					flame_presence = SmartHubSystem.getSF().getFireAlarm().sensors().getFlame_presence(),
 					heat_presence = SmartHubSystem.getSF().getFireAlarm().sensors().getHeat_presence(),
 
 					smoke_activity = SmartHubSystem.getSF().smokeSensorOutput().getActivity(),
-					carbon_activity = SmartHubSystem.getSF().carbonSensorOutput().getActivity(),
+					flame_activity = SmartHubSystem.getSF().flameSensorOutput().getActivity(),
 					heat_activity = SmartHubSystem.getSF().heatSensorOutput().getActivity();
 
 			String system_detection_status = SmartHubSystem.getSF().sensorOutput().getDetected();
 
-			System.out.println("PRESENCE(Smoke, Carbon, Heat) :("+smoke_presence+carbon_presence+heat_presence+")");
-			System.out.println("ACTIVITY(Smoke, Carbon, Heat) :("+smoke_activity+carbon_activity+heat_activity+")");
+			System.out.println("PRESENCE(Smoke, Flame, Heat) :("+smoke_presence+flame_presence+heat_presence+")");
+			System.out.println("ACTIVITY(Smoke, Flame, Heat) :("+smoke_activity+flame_activity+heat_activity+")");
 
 			if(smoke_presence) {
 				smartFire_systemStatus.setText("System Status: "+system_detection_status+" (Timer: "+SmartHubSystem.getSF().getFireAlarm().timer().getCounter()+")");
 			}
-			else if(carbon_presence) {
+			else if(flame_presence) {
 				smartFire_systemStatus.setText("System Status: "+system_detection_status+" (Timer: "+SmartHubSystem.getSF().getFireAlarm().timer().getCounter()+")");
 			}
 			else if(heat_presence) {
@@ -1056,7 +1096,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 			}
 
 	        //CARBON AND SMOKE LEVELS
-			String carbon_value, smoke_value, heat_value;
+			String flame_value, smoke_value, heat_value;
 
 			//SMOKE LEVEL
 	        if(SmartHubSystem.getSF().getFireAlarm().sensors().getSmoke_value()>=100) {
@@ -1068,12 +1108,12 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 	        }
 
 	        //CARBON LEVEL
-	        if(SmartHubSystem.getSF().getFireAlarm().sensors().getCarbon_value()>=100) {
+	        if(SmartHubSystem.getSF().getFireAlarm().sensors().getFlame_value()>=100) {
 	        	SmartHubSystem.getSF().getFireAlarm().mode().raiseDanger();
-	        	carbon_value = "MAX 100";
+	        	flame_value = "MAX 100";
 	        }
 	        else {
-	        	carbon_value = " "+ SmartHubSystem.getSF().getFireAlarm().sensors().getCarbon_value();
+	        	flame_value = " "+ SmartHubSystem.getSF().getFireAlarm().sensors().getFlame_value();
 	        }
 
 	        //HEAT LEVEL
@@ -1086,7 +1126,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 	        }
 
 	        smartFire_smokeSensor.setText("Smoke Sensor Level (Obscuration / ft): "+ smoke_value +"% over threshold");
-	        smartFire_carbonSensor.setText("Carbon Sensor Level (Parts per million): "+carbon_value+"% over threshold");
+	        smartFire_flameSensor.setText("Flame Sensor Level (Parts per million): "+flame_value+"% over threshold");
 	        smartFire_heatSensor.setText("Heat Sensor Level (Celsius): "+ heat_value +"% over threshold");
 		}
 		else {
@@ -1094,7 +1134,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
 	        //CARBON, SMOKE , HEAT LEVELS
 	        smartFire_smokeSensor.setText("Smoke Sensor Level (Obscuration / ft): Monitoring...");
-	        smartFire_carbonSensor.setText("Carbon Sensor Level (Parts per million): Monitoring...");
+	        smartFire_flameSensor.setText("Flame Sensor Level (Parts per million): Monitoring...");
 	        smartFire_heatSensor.setText("Heat Sensor Level (Celsius): Monitoring...");
 		}*/
     }
@@ -1224,18 +1264,18 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
      * **/
 
     public void readSmartLightSystemDATA(SmartHubSystem SmartHubSystem) throws ExecutionException, InterruptedException, IOException {
-        BufferedReader br = new BufferedReader(new FileReader("~/"));
-        try {
-            String line = br.readLine();
-            String lastLine = "";
-
-            while (line != null) {
-                lastLine = line;
-            }
-            System.out.println(lastLine);
-        } finally {
-            br.close();
-        }
+//        BufferedReader br = new BufferedReader(new FileReader("~/"));
+//        try {
+//            String line = br.readLine();
+//            String lastLine = "";
+//
+//            while (line != null) {
+//                lastLine = line;
+//            }
+//            System.out.println(lastLine);
+//        } finally {
+//            br.close();
+//        }
 
         Light_status = SmartHubSystem.smartLightsHUB().getOn();
         Light_usage = SmartHubSystem.getSL_HUB().getInUSE();
@@ -1559,6 +1599,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
                         playSound("Audio/click.wav");
                         SmartHubSystem.raiseToggle();
                         LogReport.add("["+formatter.format(new Date())+")]: HUB Switch Toggled !\n");
+                        sys_fire_status = true;
 
                         //Firebase - update main switch
                         System_Control.update("status", SmartHubSystem.isStateActive(State._SMARTHUBSYSTEM__HUBON));
@@ -1647,13 +1688,10 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
                     public void run() {
                         playSound("Audio/click.wav");
                         notifsView_value++;
-                        if(notifsView_value < notifsView_Title.length) {
-                            notifsViewButton.setText(notifsView_Title[notifsView_value]);
-                        }
-                        else {
+                        if (notifsView_value >= notifsView_Title.length) {
                             notifsView_value = 0;
-                            notifsViewButton.setText(notifsView_Title[notifsView_value]);
                         }
+                        notifsViewButton.setText(notifsView_Title[notifsView_value]);
                     }
                 });
                 anti_freeze.start();
@@ -1704,10 +1742,10 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 							SmartHubSystem.getSF().getFireAlarm().mode().raiseSafe();
 
 							SmartHubSystem.getSF().getSmokeSensor().setSimulate_detection_timer(r.nextInt(15,20));
-							SmartHubSystem.getSF().getCarbonSensor().setSimulate_detection_timer(r.nextInt(15,20));
+							SmartHubSystem.getSF().getFlameSensor().setSimulate_detection_timer(r.nextInt(15,20));
 							SmartHubSystem.getSF().getHeatSensor().setSimulate_detection_timer(r.nextInt(15,20));
 
-							SmartHubSystem.getSF().getCarbonSensor().setActivity(false);
+							SmartHubSystem.getSF().getFlameSensor().setActivity(false);
 							SmartHubSystem.getSF().getHeatSensor().setActivity(false);
 							SmartHubSystem.getSF().getSmokeSensor().setActivity(false);
 
@@ -1724,7 +1762,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 						else if(!fireAlarm_status){ //to turn on
 							//smartFirePanel.setBackground(Color.RED.brighter());
 							SmartHubSystem.getSF().getFireAlarm().mode().raiseDanger();
-							SmartHubSystem.getSF().getCarbonSensor().setCounter(0);
+							SmartHubSystem.getSF().getFlameSensor().setCounter(0);
 							SmartHubSystem.getSF().getSmokeSensor().setCounter(0);
 							SmartHubSystem.getSF().getHeatSensor().setCounter(0);
 					        //smartFire_switch.setText("Fire Alarm: ON");
@@ -1734,6 +1772,44 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 				anti_freeze.start();
 			}
         });*/
+
+        //FIRE SWITCH
+        smartFire_switch.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                anti_freeze = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        playSound("Audio/click.wav");
+                        SmartHubSystem.getSF().getFireAlarm().mode().raiseManual_off();
+                        LogReport.add("["+formatter.format(new Date())+")]: Smart Fire System Switch Toggled !\n");
+                        sys_fire_status = false;
+
+                        //Firebase - update Fire Alarm
+                        System_Control.update("sys_fire_status", false);
+                        SmartFireSystemDB.update("status_system", false);
+                    }
+                });
+                anti_freeze.start();
+            }
+        });
+
+        //FIRE SNOOZE
+        smartFire_snooze.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                anti_freeze = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        playSound("Audio/click.wav");
+                        LogReport.add("["+formatter.format(new Date())+")]: Smart Fire System Switch Toggled !\n");
+
+                        SmartFireSystemDB.update("pause", true);
+                    }
+                });
+                anti_freeze.start();
+            }
+        });
 
         //TV SWITCH
         smartTV_switch.addActionListener(new ActionListener(){

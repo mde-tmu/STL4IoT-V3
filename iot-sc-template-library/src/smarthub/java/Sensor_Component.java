@@ -53,6 +53,7 @@ public class Sensor_Component implements ITimed, IEventDriven {
 		setSignalSentToController(false);
 		setSensorData(0l);
 		setEnvironmentData(0l);
+		setThreshold(50l);
 		
 		isExecuting = false;
 	}
@@ -345,6 +346,20 @@ public class Sensor_Component implements ITimed, IEventDriven {
 		}
 	}
 	
+	private long threshold;
+	
+	public synchronized long getThreshold() {
+		synchronized(Sensor_Component.this) {
+			return threshold;
+		}
+	}
+	
+	public void setThreshold(long value) {
+		synchronized(Sensor_Component.this) {
+			this.threshold = value;
+		}
+	}
+	
 	/* Entry action for state '<Sensor_Monitoring>'. */
 	private void entryAction__Sensor_Component___Sensor_Monitoring_() {
 		/* Entry action for state '<Sensor_Monitoring>'. */
@@ -534,7 +549,7 @@ public class Sensor_Component implements ITimed, IEventDriven {
 		/* The reactions of state Under_Threshold. */
 		long transitioned_after = transitioned_before;
 		if (transitioned_after<0l) {
-			if (getSensorData()>90l) {
+			if (getSensorData()>getThreshold()) {
 				exitSequence__Sensor_Component___Sensor_Monitoring___Sensing__Under_Threshold();
 				enterSequence__Sensor_Component___Sensor_Monitoring___Sensing__Threshold_Reached_default();
 				_Sensor_Component___Sensor_Monitoring__react(0l);

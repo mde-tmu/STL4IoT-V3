@@ -5,6 +5,7 @@ import com.yakindu.core.IEventDriven;
 import com.yakindu.core.IStatemachine;
 import com.yakindu.core.ITimed;
 import com.yakindu.core.ITimerService;
+import com.yakindu.core.rx.Observable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -137,6 +138,30 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		public Mode(FireAlarm_Unit parent) {
 			this.parent = parent;
 		}
+		private boolean manual_off;
+		
+		
+		public void raiseManual_off() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					manual_off = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
+		private boolean manual_on;
+		
+		
+		public void raiseManual_on() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					manual_on = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
 		private boolean safe;
 		
 		
@@ -173,6 +198,32 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 			}
 		}
 		
+		private boolean pause;
+		
+		
+		public void raisePause() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					pause = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
+		private long pause_time;
+		
+		public synchronized long getPause_time() {
+			synchronized(parent) {
+				return pause_time;
+			}
+		}
+		
+		public void setPause_time(long value) {
+			synchronized(parent) {
+				this.pause_time = value;
+			}
+		}
+		
 	}
 	
 	public static class Alarm {
@@ -184,25 +235,33 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		private boolean off;
 		
 		
-		public void raiseOff() {
+		protected void raiseOff() {
 			synchronized(parent) {
-				parent.inEventQueue.add(() -> {
-					off = true;
-				});
-				parent.runCycle();
+				off = true;
+				offObservable.next(null);
 			}
+		}
+		
+		private Observable<Void> offObservable = new Observable<Void>();
+		
+		public Observable<Void> getOff() {
+			return offObservable;
 		}
 		
 		private boolean on;
 		
 		
-		public void raiseOn() {
+		protected void raiseOn() {
 			synchronized(parent) {
-				parent.inEventQueue.add(() -> {
-					on = true;
-				});
-				parent.runCycle();
+				on = true;
+				onObservable.next(null);
 			}
+		}
+		
+		private Observable<Void> onObservable = new Observable<Void>();
+		
+		public Observable<Void> getOn() {
+			return onObservable;
 		}
 		
 		private boolean threshold_reached;
@@ -219,17 +278,17 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 			}
 		}
 		
-		private boolean sound;
+		private boolean activated;
 		
-		public synchronized boolean getSound() {
+		public synchronized boolean getActivated() {
 			synchronized(parent) {
-				return sound;
+				return activated;
 			}
 		}
 		
-		public void setSound(boolean value) {
+		public void setActivated(boolean value) {
 			synchronized(parent) {
-				this.sound = value;
+				this.activated = value;
 			}
 		}
 		
@@ -241,6 +300,18 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		public Sensors(FireAlarm_Unit parent) {
 			this.parent = parent;
 		}
+		private boolean triggered;
+		
+		
+		public void raiseTriggered() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					triggered = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
 		private long index;
 		
 		public synchronized long getIndex() {
@@ -283,17 +354,17 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 			}
 		}
 		
-		private boolean carbon_presence;
+		private boolean flame_presence;
 		
-		public synchronized boolean getCarbon_presence() {
+		public synchronized boolean getFlame_presence() {
 			synchronized(parent) {
-				return carbon_presence;
+				return flame_presence;
 			}
 		}
 		
-		public void setCarbon_presence(boolean value) {
+		public void setFlame_presence(boolean value) {
 			synchronized(parent) {
-				this.carbon_presence = value;
+				this.flame_presence = value;
 			}
 		}
 		
@@ -325,17 +396,17 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 			}
 		}
 		
-		private long carbon_value;
+		private long flame_value;
 		
-		public synchronized long getCarbon_value() {
+		public synchronized long getFlame_value() {
 			synchronized(parent) {
-				return carbon_value;
+				return flame_value;
 			}
 		}
 		
-		public void setCarbon_value(long value) {
+		public void setFlame_value(long value) {
 			synchronized(parent) {
-				this.carbon_value = value;
+				this.flame_value = value;
 			}
 		}
 		
@@ -367,17 +438,17 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 			}
 		}
 		
-		private long carbon_increment;
+		private long flame_increment;
 		
-		public synchronized long getCarbon_increment() {
+		public synchronized long getFlame_increment() {
 			synchronized(parent) {
-				return carbon_increment;
+				return flame_increment;
 			}
 		}
 		
-		public void setCarbon_increment(long value) {
+		public void setFlame_increment(long value) {
 			synchronized(parent) {
-				this.carbon_increment = value;
+				this.flame_increment = value;
 			}
 		}
 		
@@ -423,31 +494,31 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 			}
 		}
 		
-		private long carbon_warning;
+		private long flame_warning;
 		
-		public synchronized long getCarbon_warning() {
+		public synchronized long getFlame_warning() {
 			synchronized(parent) {
-				return carbon_warning;
+				return flame_warning;
 			}
 		}
 		
-		public void setCarbon_warning(long value) {
+		public void setFlame_warning(long value) {
 			synchronized(parent) {
-				this.carbon_warning = value;
+				this.flame_warning = value;
 			}
 		}
 		
-		private long carbon_threshold;
+		private long flame_threshold;
 		
-		public synchronized long getCarbon_threshold() {
+		public synchronized long getFlame_threshold() {
 			synchronized(parent) {
-				return carbon_threshold;
+				return flame_threshold;
 			}
 		}
 		
-		public void setCarbon_threshold(long value) {
+		public void setFlame_threshold(long value) {
 			synchronized(parent) {
-				this.carbon_threshold = value;
+				this.flame_threshold = value;
 			}
 		}
 		
@@ -495,33 +566,18 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		_FIREALARM_UNIT___FIRE_ALARM_RUNNING_,
 		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_OFF,
 		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_ON,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_SAFE,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_INITIAL_WARNING,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED,
+		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_PAUSE,
 		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__SMOKESENSOR__MONITORING_SMOKE_LEVEL_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__CARBONSENSOR__MONITORING_CARBON_LEVEL_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SENSORWARNING,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM,
 		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__DISABLED_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__INITIAL_WARNING_,
-		_FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED,
+		_FIREALARM_UNIT__FIRE_ALARM_SHUTDOWN,
 		$NULLSTATE$
 	};
 	
-	private final State[] stateVector = new State[6];
+	private final State[] stateVector = new State[2];
 	
 	private ITimerService timerService;
 	
-	private final boolean[] timeEvents = new boolean[6];
+	private final boolean[] timeEvents = new boolean[3];
 	
 	private BlockingQueue<Runnable> inEventQueue = new LinkedBlockingQueue<Runnable>();
 	private boolean isExecuting;
@@ -556,7 +612,7 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		mode = new Mode(this);
 		alarm = new Alarm(this);
 		sensors = new Sensors(this);
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 2; i++) {
 			stateVector[i] = State.$NULLSTATE$;
 		}
 		
@@ -569,25 +625,26 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		timer.setFinal_warning_period(8l);
 		message.setStatus("");
 		message.setSensor("");
+		mode.setPause_time(1l);
 		alarm.setThreshold_reached(false);
-		alarm.setSound(false);
+		alarm.setActivated(false);
 		sensors.setIndex(0l);
 		sensors.setTriggerSignal_received(false);
 		sensors.setSmoke_presence(false);
-		sensors.setCarbon_presence(false);
+		sensors.setFlame_presence(false);
 		sensors.setHeat_presence(false);
 		sensors.setSmoke_value(0l);
-		sensors.setCarbon_value(0l);
+		sensors.setFlame_value(0l);
 		sensors.setHeat_value(0l);
 		sensors.setSmoke_increment(1l);
-		sensors.setCarbon_increment(1l);
+		sensors.setFlame_increment(1l);
 		sensors.setHeat_increment(1l);
 		sensors.setSmoke_warning(50l);
-		sensors.setSmoke_threshold(100l);
-		sensors.setCarbon_warning(50l);
-		sensors.setCarbon_threshold(100l);
+		sensors.setSmoke_threshold(90l);
+		sensors.setFlame_warning(50l);
+		sensors.setFlame_threshold(90l);
 		sensors.setHear_warning(50l);
-		sensors.setHeat_threshold(100l);
+		sensors.setHeat_threshold(90l);
 		
 		isExecuting = false;
 	}
@@ -622,7 +679,7 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 	 * @see IStatemachine#isActive()
 	 */
 	public synchronized boolean isActive() {
-		return stateVector[0] != State.$NULLSTATE$||stateVector[1] != State.$NULLSTATE$||stateVector[2] != State.$NULLSTATE$||stateVector[3] != State.$NULLSTATE$||stateVector[4] != State.$NULLSTATE$||stateVector[5] != State.$NULLSTATE$;
+		return stateVector[0] != State.$NULLSTATE$||stateVector[1] != State.$NULLSTATE$;
 	}
 	
 	/** 
@@ -637,17 +694,16 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		timer.enable = false;
 		timer.disable = false;
 		timer.reset = false;
+		mode.manual_off = false;
+		mode.manual_on = false;
 		mode.safe = false;
 		mode.warning = false;
 		mode.danger = false;
-		alarm.off = false;
-		alarm.on = false;
+		mode.pause = false;
+		sensors.triggered = false;
 		timeEvents[0] = false;
 		timeEvents[1] = false;
 		timeEvents[2] = false;
-		timeEvents[3] = false;
-		timeEvents[4] = false;
-		timeEvents[5] = false;
 	}
 	
 	private void microStep() {
@@ -660,76 +716,22 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_ON:
 			transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_On_react(transitioned);
 			break;
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_PAUSE:
+			transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause_react(transitioned);
+			break;
+		case _FIREALARM_UNIT__FIRE_ALARM_SHUTDOWN:
+			transitioned = _FireAlarm_Unit__Fire_Alarm_Shutdown_react(transitioned);
+			break;
 		default:
 			break;
 		}
 		if (getStateConfVectorPosition()<1l) {
 			switch (stateVector[1]) {
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_SAFE:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Status_Safe_react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_INITIAL_WARNING:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning_react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning_react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated_react(transitioned);
-				break;
-			default:
-				break;
-			}
-		}
-		if (getStateConfVectorPosition()<2l) {
-			switch (stateVector[2]) {
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__SMOKESENSOR__MONITORING_SMOKE_LEVEL_:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level__react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SENSORWARNING:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning_react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm_react(transitioned);
+			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_:
+				_FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__react(transitioned);
 				break;
 			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring__react(transitioned);
-				break;
-			default:
-				break;
-			}
-		}
-		if (getStateConfVectorPosition()<3l) {
-			switch (stateVector[3]) {
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__CARBONSENSOR__MONITORING_CARBON_LEVEL_:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level__react(transitioned);
-				break;
-			default:
-				break;
-			}
-		}
-		if (getStateConfVectorPosition()<4l) {
-			switch (stateVector[4]) {
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_:
-				transitioned = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level__react(transitioned);
-				break;
-			default:
-				break;
-			}
-		}
-		if (getStateConfVectorPosition()<5l) {
-			switch (stateVector[5]) {
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__DISABLED_:
-				_FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled__react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_:
-				_FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning__react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__INITIAL_WARNING_:
-				_FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning__react(transitioned);
-				break;
-			case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED:
-				_FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended_react(transitioned);
+				_FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring__react(transitioned);
 				break;
 			default:
 				break;
@@ -770,54 +772,19 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		switch (state) {
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING_:
 			return stateVector[0].ordinal() >= State.
-					_FIREALARM_UNIT___FIRE_ALARM_RUNNING_.ordinal()&& stateVector[0].ordinal() <= State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED.ordinal();
+					_FIREALARM_UNIT___FIRE_ALARM_RUNNING_.ordinal()&& stateVector[0].ordinal() <= State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_.ordinal();
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_OFF:
 			return stateVector[0] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_OFF;
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_ON:
 			return stateVector[0] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_ON;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_SAFE:
-			return stateVector[1] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_SAFE;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING:
-			return stateVector[1].ordinal() >= State.
-					_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING.ordinal()&& stateVector[1].ordinal() <= State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING.ordinal();
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_INITIAL_WARNING:
-			return stateVector[1] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_INITIAL_WARNING;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING:
-			return stateVector[1] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER:
-			return stateVector[1].ordinal() >= State.
-					_FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER.ordinal()&& stateVector[1].ordinal() <= State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED.ordinal();
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED:
-			return stateVector[1] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED;
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_PAUSE:
+			return stateVector[0] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_PAUSE;
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_:
-			return stateVector[2].ordinal() >= State.
-					_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_.ordinal()&& stateVector[2].ordinal() <= State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_.ordinal();
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__SMOKESENSOR__MONITORING_SMOKE_LEVEL_:
-			return stateVector[2] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__SMOKESENSOR__MONITORING_SMOKE_LEVEL_;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__CARBONSENSOR__MONITORING_CARBON_LEVEL_:
-			return stateVector[3] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__CARBONSENSOR__MONITORING_CARBON_LEVEL_;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_:
-			return stateVector[4] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED_:
-			return stateVector[2].ordinal() >= State.
-					_FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED_.ordinal()&& stateVector[2].ordinal() <= State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM.ordinal();
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SENSORWARNING:
-			return stateVector[2] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SENSORWARNING;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM:
-			return stateVector[2] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM;
+			return stateVector[1] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_;
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_:
-			return stateVector[2] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__DISABLED_:
-			return stateVector[5] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__DISABLED_;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING_:
-			return stateVector[5].ordinal() >= State.
-					_FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING_.ordinal()&& stateVector[5].ordinal() <= State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED.ordinal();
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_:
-			return stateVector[5] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__INITIAL_WARNING_:
-			return stateVector[5] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__INITIAL_WARNING_;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED:
-			return stateVector[5] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED;
+			return stateVector[1] == State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_;
+		case _FIREALARM_UNIT__FIRE_ALARM_SHUTDOWN:
+			return stateVector[0] == State._FIREALARM_UNIT__FIRE_ALARM_SHUTDOWN;
 		default:
 			return false;
 		}
@@ -876,182 +843,67 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 	/* Entry action for state 'Alarm_Off'. */
 	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Off() {
 		/* Entry action for state 'Alarm_Off'. */
-		alarm.setSound(false);
+		alarm.raiseOff();
 	}
 	
 	/* Entry action for state 'Alarm_On'. */
 	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_On() {
 		/* Entry action for state 'Alarm_On'. */
-		alarm.setSound(true);
+		alarm.raiseOn();
 	}
 	
-	/* Entry action for state 'Safe'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe() {
-		/* Entry action for state 'Safe'. */
-		message.setStatus("SAFE");
-		mode.raiseSafe();
-		setWarned(false);
-		alarm.setThreshold_reached(false);
-		alarm.setSound(false);
-		timer.raiseReset();
-	}
-	
-	/* Entry action for state 'Warning'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning() {
-		/* Entry action for state 'Warning'. */
-		mode.raiseWarning();
-		message.setStatus("WARNING");
-		setWarned(true);
-	}
-	
-	/* Entry action for state 'initial_warning'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning() {
-		/* Entry action for state 'initial_warning'. */
-		timer.raiseEnable();
-	}
-	
-	/* Entry action for state 'final_warning'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning() {
-		/* Entry action for state 'final_warning'. */
-		timer.raiseReset();
-		message.setStatus("FINAL WARNING");
-	}
-	
-	/* Entry action for state 'Danger'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger() {
-		/* Entry action for state 'Danger'. */
-		mode.raiseDanger();
-		alarm.setSound(true);
-		setWarned(false);
-		timer.raiseDisable();
-	}
-	
-	/* Entry action for state '911_emergency_Activated'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated() {
-		/* Entry action for state '911_emergency_Activated'. */
-		message.setStatus("DANGER! 911 has been notified");
+	/* Entry action for state 'Alarm_Pause'. */
+	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause() {
+		/* Entry action for state 'Alarm_Pause'. */
+		timerService.setTimer(this, 0, (mode.getPause_time() * 1000l), false);
+		alarm.raiseOff();
 	}
 	
 	/* Entry action for state '<Sensor_Triggered>'. */
 	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_() {
 		/* Entry action for state '<Sensor_Triggered>'. */
-		mode.raiseWarning();
-	}
-	
-	/* Entry action for state '<Monitoring_Smoke_Level>'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level_() {
-		/* Entry action for state '<Monitoring_Smoke_Level>'. */
-		timerService.setTimer(this, 0, (1l * 1000l), true);
-	}
-	
-	/* Entry action for state '<Monitoring_Carbon_Level>'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level_() {
-		/* Entry action for state '<Monitoring_Carbon_Level>'. */
 		timerService.setTimer(this, 1, (1l * 1000l), true);
-	}
-	
-	/* Entry action for state '<Monitoring_Heat_Level>'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level_() {
-		/* Entry action for state '<Monitoring_Heat_Level>'. */
-		timerService.setTimer(this, 2, (1l * 1000l), true);
-	}
-	
-	/* Entry action for state '<Threshold_Reached>'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached_() {
-		/* Entry action for state '<Threshold_Reached>'. */
-		alarm.setThreshold_reached(true);
-	}
-	
-	/* Entry action for state 'SensorWarning'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning() {
-		/* Entry action for state 'SensorWarning'. */
-		mode.raiseWarning();
-	}
-	
-	/* Entry action for state 'SoundAlarm'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm() {
-		/* Entry action for state 'SoundAlarm'. */
-		alarm.setSound(true);
+		message.setSensor("Sensors are Triggered");
+		mode.raiseDanger();
 	}
 	
 	/* Entry action for state '<Sensor_Value_Monitoring>'. */
 	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_() {
 		/* Entry action for state '<Sensor_Value_Monitoring>'. */
-		timerService.setTimer(this, 3, 500l, true);
+		timerService.setTimer(this, 2, (1l * 1000l), true);
 		message.setSensor("Sensors are Monitoring");
-		sensors.setSmoke_value(0l);
-		sensors.setCarbon_value(0l);
-		sensors.setHeat_value(0l);
+		mode.raiseSafe();
 	}
 	
-	/* Entry action for state '<final_warning>'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_() {
-		/* Entry action for state '<final_warning>'. */
-		timerService.setTimer(this, 4, (1l * 1000l), true);
+	/* Entry action for state 'Fire_Alarm_Shutdown'. */
+	private void entryAction__FireAlarm_Unit__Fire_Alarm_Shutdown() {
+		/* Entry action for state 'Fire_Alarm_Shutdown'. */
+		alarm.raiseOff();
 	}
 	
-	/* Entry action for state '<initial_warning>'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning_() {
-		/* Entry action for state '<initial_warning>'. */
-		timerService.setTimer(this, 5, (1l * 1000l), true);
-	}
-	
-	/* Entry action for state '<final_warning_ended'. */
-	private void entryAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended() {
-		/* Entry action for state '<final_warning_ended'. */
-		mode.raiseDanger();
-		timer.raiseDisable();
+	/* Exit action for state 'Alarm_Pause'. */
+	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause() {
+		/* Exit action for state 'Alarm_Pause'. */
+		timerService.unsetTimer(this, 0);
 	}
 	
 	/* Exit action for state '<Sensor_Triggered>'. */
 	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_() {
 		/* Exit action for state '<Sensor_Triggered>'. */
-		alarm.setThreshold_reached(true);
-	}
-	
-	/* Exit action for state '<Monitoring_Smoke_Level>'. */
-	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level_() {
-		/* Exit action for state '<Monitoring_Smoke_Level>'. */
-		timerService.unsetTimer(this, 0);
-	}
-	
-	/* Exit action for state '<Monitoring_Carbon_Level>'. */
-	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level_() {
-		/* Exit action for state '<Monitoring_Carbon_Level>'. */
 		timerService.unsetTimer(this, 1);
-	}
-	
-	/* Exit action for state '<Monitoring_Heat_Level>'. */
-	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level_() {
-		/* Exit action for state '<Monitoring_Heat_Level>'. */
-		timerService.unsetTimer(this, 2);
 	}
 	
 	/* Exit action for state '<Sensor_Value_Monitoring>'. */
 	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_() {
 		/* Exit action for state '<Sensor_Value_Monitoring>'. */
-		timerService.unsetTimer(this, 3);
-	}
-	
-	/* Exit action for state '<final_warning>'. */
-	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_() {
-		/* Exit action for state '<final_warning>'. */
-		timerService.unsetTimer(this, 4);
-	}
-	
-	/* Exit action for state '<initial_warning>'. */
-	private void exitAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning_() {
-		/* Exit action for state '<initial_warning>'. */
-		timerService.unsetTimer(this, 5);
+		timerService.unsetTimer(this, 2);
 	}
 	
 	/* 'default' enter sequence for state <Fire_Alarm_Running> */
 	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__default() {
 		/* 'default' enter sequence for state <Fire_Alarm_Running> */
 		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_default();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_default();
 		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level_default();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status_default();
 	}
 	
 	/* 'default' enter sequence for state Alarm_Off */
@@ -1070,151 +922,36 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		stateConfVectorPosition = 0;
 	}
 	
-	/* 'default' enter sequence for state Safe */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe_default() {
-		/* 'default' enter sequence for state Safe */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe();
-		stateVector[1] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_SAFE;
-		stateConfVectorPosition = 1;
-	}
-	
-	/* 'default' enter sequence for state Warning */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_default() {
-		/* 'default' enter sequence for state Warning */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_default();
-	}
-	
-	/* 'default' enter sequence for state initial_warning */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning_default() {
-		/* 'default' enter sequence for state initial_warning */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning();
-		stateVector[1] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_INITIAL_WARNING;
-		stateConfVectorPosition = 1;
-	}
-	
-	/* 'default' enter sequence for state final_warning */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning_default() {
-		/* 'default' enter sequence for state final_warning */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning();
-		stateVector[1] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING;
-		stateConfVectorPosition = 1;
-	}
-	
-	/* 'default' enter sequence for state Danger */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger_default() {
-		/* 'default' enter sequence for state Danger */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated__default();
-	}
-	
-	/* 'default' enter sequence for state 911_emergency_Activated */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated_default() {
-		/* 'default' enter sequence for state 911_emergency_Activated */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated();
-		stateVector[1] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED;
-		stateConfVectorPosition = 1;
+	/* 'default' enter sequence for state Alarm_Pause */
+	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause_default() {
+		/* 'default' enter sequence for state Alarm_Pause */
+		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause();
+		stateVector[0] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_PAUSE;
+		stateConfVectorPosition = 0;
 	}
 	
 	/* 'default' enter sequence for state <Sensor_Triggered> */
 	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__default() {
 		/* 'default' enter sequence for state <Sensor_Triggered> */
 		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor_default();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor_default();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor_default();
-	}
-	
-	/* 'default' enter sequence for state <Monitoring_Smoke_Level> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level__default() {
-		/* 'default' enter sequence for state <Monitoring_Smoke_Level> */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level_();
-		stateVector[2] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__SMOKESENSOR__MONITORING_SMOKE_LEVEL_;
-		stateConfVectorPosition = 2;
-	}
-	
-	/* 'default' enter sequence for state <Monitoring_Carbon_Level> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level__default() {
-		/* 'default' enter sequence for state <Monitoring_Carbon_Level> */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level_();
-		stateVector[3] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__CARBONSENSOR__MONITORING_CARBON_LEVEL_;
-		stateConfVectorPosition = 3;
-	}
-	
-	/* 'default' enter sequence for state <Monitoring_Heat_Level> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level__default() {
-		/* 'default' enter sequence for state <Monitoring_Heat_Level> */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level_();
-		stateVector[4] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_;
-		stateConfVectorPosition = 4;
-	}
-	
-	/* 'default' enter sequence for state <Threshold_Reached> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__default() {
-		/* 'default' enter sequence for state <Threshold_Reached> */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached_();
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_default();
-	}
-	
-	/* 'default' enter sequence for state SensorWarning */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning_default() {
-		/* 'default' enter sequence for state SensorWarning */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning();
-		stateVector[2] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SENSORWARNING;
-		stateConfVectorPosition = 2;
-	}
-	
-	/* 'default' enter sequence for state SoundAlarm */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm_default() {
-		/* 'default' enter sequence for state SoundAlarm */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm();
-		stateVector[2] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM;
-		stateConfVectorPosition = 2;
+		stateVector[1] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_;
+		stateConfVectorPosition = 1;
 	}
 	
 	/* 'default' enter sequence for state <Sensor_Value_Monitoring> */
 	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring__default() {
 		/* 'default' enter sequence for state <Sensor_Value_Monitoring> */
 		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_();
-		stateVector[2] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_;
-		stateConfVectorPosition = 2;
+		stateVector[1] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_;
+		stateConfVectorPosition = 1;
 	}
 	
-	/* 'default' enter sequence for state <disabled> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled__default() {
-		/* 'default' enter sequence for state <disabled> */
-		stateVector[5] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__DISABLED_;
-		stateConfVectorPosition = 5;
-	}
-	
-	/* 'default' enter sequence for state <timer_running> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__default() {
-		/* 'default' enter sequence for state <timer_running> */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1_default();
-	}
-	
-	/* 'default' enter sequence for state <final_warning> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning__default() {
-		/* 'default' enter sequence for state <final_warning> */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_();
-		stateVector[5] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_;
-		stateConfVectorPosition = 5;
-	}
-	
-	/* 'default' enter sequence for state <initial_warning> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning__default() {
-		/* 'default' enter sequence for state <initial_warning> */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning_();
-		stateVector[5] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__INITIAL_WARNING_;
-		stateConfVectorPosition = 5;
-	}
-	
-	/* 'default' enter sequence for state <final_warning_ended */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended_default() {
-		/* 'default' enter sequence for state <final_warning_ended */
-		entryAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended();
-		stateVector[5] = State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED;
-		stateConfVectorPosition = 5;
+	/* 'default' enter sequence for state Fire_Alarm_Shutdown */
+	private void enterSequence__FireAlarm_Unit__Fire_Alarm_Shutdown_default() {
+		/* 'default' enter sequence for state Fire_Alarm_Shutdown */
+		entryAction__FireAlarm_Unit__Fire_Alarm_Shutdown();
+		stateVector[0] = State._FIREALARM_UNIT__FIRE_ALARM_SHUTDOWN;
+		stateConfVectorPosition = 0;
 	}
 	
 	/* 'default' enter sequence for region <FireAlarm_Unit> */
@@ -1229,64 +966,17 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		react__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch__entry_Default();
 	}
 	
-	/* 'default' enter sequence for region Status */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_default() {
-		/* 'default' enter sequence for region Status */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Status__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region Level */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_default() {
-		/* 'default' enter sequence for region Level */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region <911_activated> */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated__default() {
-		/* 'default' enter sequence for region <911_activated> */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___entry_Default();
-	}
-	
 	/* 'default' enter sequence for region Monitoring_Sensor_Level */
 	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level_default() {
 		/* 'default' enter sequence for region Monitoring_Sensor_Level */
 		react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__entry_Default();
 	}
 	
-	/* 'default' enter sequence for region smokeSensor */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor_default() {
-		/* 'default' enter sequence for region smokeSensor */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region carbonSensor */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor_default() {
-		/* 'default' enter sequence for region carbonSensor */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region heatSensor */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor_default() {
-		/* 'default' enter sequence for region heatSensor */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region warning_before_sounding */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_default() {
-		/* 'default' enter sequence for region warning_before_sounding */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region Timer_Status */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status_default() {
-		/* 'default' enter sequence for region Timer_Status */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region r1 */
-	private void enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1_default() {
-		/* 'default' enter sequence for region r1 */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__entry_Default();
+	/* Default exit sequence for state <Fire_Alarm_Running> */
+	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running_() {
+		/* Default exit sequence for state <Fire_Alarm_Running> */
+		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch();
+		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level();
 	}
 	
 	/* Default exit sequence for state Alarm_Off */
@@ -1303,141 +993,35 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		stateConfVectorPosition = 0;
 	}
 	
-	/* Default exit sequence for state Safe */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe() {
-		/* Default exit sequence for state Safe */
-		stateVector[1] = State.$NULLSTATE$;
-		stateConfVectorPosition = 1;
-	}
-	
-	/* Default exit sequence for state Warning */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning() {
-		/* Default exit sequence for state Warning */
-		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level();
-	}
-	
-	/* Default exit sequence for state initial_warning */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning() {
-		/* Default exit sequence for state initial_warning */
-		stateVector[1] = State.$NULLSTATE$;
-		stateConfVectorPosition = 1;
-	}
-	
-	/* Default exit sequence for state final_warning */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning() {
-		/* Default exit sequence for state final_warning */
-		stateVector[1] = State.$NULLSTATE$;
-		stateConfVectorPosition = 1;
-	}
-	
-	/* Default exit sequence for state Danger */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger() {
-		/* Default exit sequence for state Danger */
-		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated_();
-	}
-	
-	/* Default exit sequence for state 911_emergency_Activated */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated() {
-		/* Default exit sequence for state 911_emergency_Activated */
-		stateVector[1] = State.$NULLSTATE$;
-		stateConfVectorPosition = 1;
+	/* Default exit sequence for state Alarm_Pause */
+	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause() {
+		/* Default exit sequence for state Alarm_Pause */
+		stateVector[0] = State.$NULLSTATE$;
+		stateConfVectorPosition = 0;
+		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause();
 	}
 	
 	/* Default exit sequence for state <Sensor_Triggered> */
 	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_() {
 		/* Default exit sequence for state <Sensor_Triggered> */
-		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor();
-		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor();
-		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor();
+		stateVector[1] = State.$NULLSTATE$;
+		stateConfVectorPosition = 1;
 		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
-	}
-	
-	/* Default exit sequence for state <Monitoring_Smoke_Level> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level_() {
-		/* Default exit sequence for state <Monitoring_Smoke_Level> */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
-		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level_();
-	}
-	
-	/* Default exit sequence for state <Monitoring_Carbon_Level> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level_() {
-		/* Default exit sequence for state <Monitoring_Carbon_Level> */
-		stateVector[3] = State.$NULLSTATE$;
-		stateConfVectorPosition = 3;
-		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level_();
-	}
-	
-	/* Default exit sequence for state <Monitoring_Heat_Level> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level_() {
-		/* Default exit sequence for state <Monitoring_Heat_Level> */
-		stateVector[4] = State.$NULLSTATE$;
-		stateConfVectorPosition = 4;
-		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level_();
-	}
-	
-	/* Default exit sequence for state <Threshold_Reached> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached_() {
-		/* Default exit sequence for state <Threshold_Reached> */
-		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding();
-	}
-	
-	/* Default exit sequence for state SensorWarning */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning() {
-		/* Default exit sequence for state SensorWarning */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
-	}
-	
-	/* Default exit sequence for state SoundAlarm */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm() {
-		/* Default exit sequence for state SoundAlarm */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
 	}
 	
 	/* Default exit sequence for state <Sensor_Value_Monitoring> */
 	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_() {
 		/* Default exit sequence for state <Sensor_Value_Monitoring> */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
+		stateVector[1] = State.$NULLSTATE$;
+		stateConfVectorPosition = 1;
 		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_();
 	}
 	
-	/* Default exit sequence for state <disabled> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled_() {
-		/* Default exit sequence for state <disabled> */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
-	}
-	
-	/* Default exit sequence for state <timer_running> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running_() {
-		/* Default exit sequence for state <timer_running> */
-		exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1();
-	}
-	
-	/* Default exit sequence for state <final_warning> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_() {
-		/* Default exit sequence for state <final_warning> */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
-		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_();
-	}
-	
-	/* Default exit sequence for state <initial_warning> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning_() {
-		/* Default exit sequence for state <initial_warning> */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
-		exitAction__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning_();
-	}
-	
-	/* Default exit sequence for state <final_warning_ended */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended() {
-		/* Default exit sequence for state <final_warning_ended */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
+	/* Default exit sequence for state Fire_Alarm_Shutdown */
+	private void exitSequence__FireAlarm_Unit__Fire_Alarm_Shutdown() {
+		/* Default exit sequence for state Fire_Alarm_Shutdown */
+		stateVector[0] = State.$NULLSTATE$;
+		stateConfVectorPosition = 0;
 	}
 	
 	/* Default exit sequence for region <FireAlarm_Unit> */
@@ -1450,34 +1034,18 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_ON:
 			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_On();
 			break;
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_PAUSE:
+			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause();
+			break;
+		case _FIREALARM_UNIT__FIRE_ALARM_SHUTDOWN:
+			exitSequence__FireAlarm_Unit__Fire_Alarm_Shutdown();
+			break;
 		default:
 			break;
 		}
 		switch (stateVector[1]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_SAFE:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_INITIAL_WARNING:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated();
-			break;
-		default:
-			break;
-		}
-		switch (stateVector[2]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__SMOKESENSOR__MONITORING_SMOKE_LEVEL_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level_();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SENSORWARNING:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm();
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_:
+			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
 			break;
 		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_:
 			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_();
@@ -1485,144 +1053,38 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		default:
 			break;
 		}
-		switch (stateVector[3]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__CARBONSENSOR__MONITORING_CARBON_LEVEL_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level_();
+	}
+	
+	/* Default exit sequence for region Alarm_Switch */
+	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch() {
+		/* Default exit sequence for region Alarm_Switch */
+		switch (stateVector[0]) {
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_OFF:
+			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Off();
 			break;
-		default:
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_ON:
+			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_On();
 			break;
-		}
-		switch (stateVector[4]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level_();
-			exitAction__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
-			break;
-		default:
-			break;
-		}
-		switch (stateVector[5]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__DISABLED_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled_();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__INITIAL_WARNING_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning_();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended();
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__ALARM_SWITCH_ALARM_PAUSE:
+			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause();
 			break;
 		default:
 			break;
 		}
 	}
 	
-	/* Default exit sequence for region Level */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level() {
-		/* Default exit sequence for region Level */
+	/* Default exit sequence for region Monitoring_Sensor_Level */
+	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level() {
+		/* Default exit sequence for region Monitoring_Sensor_Level */
 		switch (stateVector[1]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_INITIAL_WARNING:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning();
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED_:
+			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
 			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning();
-			break;
-		default:
-			break;
-		}
-	}
-	
-	/* Default exit sequence for region <911_activated> */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated_() {
-		/* Default exit sequence for region <911_activated> */
-		switch (stateVector[1]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_DANGER__911_ACTIVATED___911_EMERGENCY_ACTIVATED:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated();
+		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_VALUE_MONITORING_:
+			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_();
 			break;
 		default:
 			break;
-		}
-	}
-	
-	/* Default exit sequence for region smokeSensor */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor() {
-		/* Default exit sequence for region smokeSensor */
-		switch (stateVector[2]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__SMOKESENSOR__MONITORING_SMOKE_LEVEL_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level_();
-			break;
-		default:
-			break;
-		}
-	}
-	
-	/* Default exit sequence for region carbonSensor */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor() {
-		/* Default exit sequence for region carbonSensor */
-		switch (stateVector[3]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__CARBONSENSOR__MONITORING_CARBON_LEVEL_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level_();
-			break;
-		default:
-			break;
-		}
-	}
-	
-	/* Default exit sequence for region heatSensor */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor() {
-		/* Default exit sequence for region heatSensor */
-		switch (stateVector[4]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__SENSOR_TRIGGERED__HEATSENSOR__MONITORING_HEAT_LEVEL_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level_();
-			break;
-		default:
-			break;
-		}
-	}
-	
-	/* Default exit sequence for region warning_before_sounding */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding() {
-		/* Default exit sequence for region warning_before_sounding */
-		switch (stateVector[2]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SENSORWARNING:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__MONITORING_SENSOR_LEVEL__THRESHOLD_REACHED__WARNING_BEFORE_SOUNDING_SOUNDALARM:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm();
-			break;
-		default:
-			break;
-		}
-	}
-	
-	/* Default exit sequence for region r1 */
-	private void exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1() {
-		/* Default exit sequence for region r1 */
-		switch (stateVector[5]) {
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__INITIAL_WARNING_:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning_();
-			break;
-		case _FIREALARM_UNIT___FIRE_ALARM_RUNNING__TIMER_STATUS__TIMER_RUNNING__R1__FINAL_WARNING_ENDED:
-			exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended();
-			break;
-		default:
-			break;
-		}
-	}
-	
-	/* The reactions of state null. */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__choice_0() {
-		/* The reactions of state null. */
-		if (isStateActive(State._FIREALARM_UNIT___FIRE_ALARM_RUNNING__STATUS_WARNING_LEVEL_FINAL_WARNING)) {
-			timer.setCounter(timer.final_warning_period);
-			enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning__default();
-		} else {
-			timer.setCounter(timer.warning_period);
-			enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning__default();
 		}
 	}
 	
@@ -1639,63 +1101,9 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 	}
 	
 	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Status__entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe_default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level__entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning_default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated_default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level__default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level__default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level__default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding__entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning_default();
-	}
-	
-	/* Default react sequence for initial entry  */
 	private void react__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__entry_Default() {
 		/* Default react sequence for initial entry  */
 		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring__default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__entry_Default() {
-		/* Default react sequence for initial entry  */
-		react__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__choice_0();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled__default();
 	}
 	
 	private long react(long transitioned_before) {
@@ -1706,8 +1114,19 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 	private long _FireAlarm_Unit___Fire_Alarm_Running__react(long transitioned_before) {
 		/* The reactions of state <Fire_Alarm_Running>. */
 		long transitioned_after = transitioned_before;
-		/* Always execute local reactions. */
-		transitioned_after = react(transitioned_before);
+		if (transitioned_after<0l) {
+			if (mode.manual_off) {
+				exitSequence__FireAlarm_Unit___Fire_Alarm_Running_();
+				enterSequence__FireAlarm_Unit__Fire_Alarm_Shutdown_default();
+				react(0l);
+				transitioned_after = 1l;
+			}
+		}
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = react(transitioned_before);
+		}
 		return transitioned_after;
 	}
 	
@@ -1732,112 +1151,27 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_On();
 				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Off_default();
 				transitioned_after = 0l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Status_Safe_react(long transitioned_before) {
-		/* The reactions of state Safe. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<1l) {
-			if (mode.warning) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_default();
-				transitioned_after = 1l;
 			} else {
-				if ((mode.danger || alarm.on)) {
-					exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe();
-					enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger_default();
-					transitioned_after = 1l;
+				if (mode.pause) {
+					exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_On();
+					enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause_default();
+					transitioned_after = 0l;
 				}
 			}
 		}
 		return transitioned_after;
 	}
 	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_react(long transitioned_before) {
-		/* The reactions of state Warning. */
+	private long _FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause_react(long transitioned_before) {
+		/* The reactions of state Alarm_Pause. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<1l) {
-			if ((mode.safe || alarm.off)) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe_default();
-				transitioned_after = 1l;
-			} else {
-				if (mode.danger) {
-					exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning();
-					enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger_default();
-					transitioned_after = 1l;
-				} else {
-					if (!(sensors.getTriggerSignal_received())) {
-						exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning();
-						enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe_default();
-						transitioned_after = 1l;
-					}
-				}
+		if (transitioned_after<0l) {
+			if (timeEvents[0]) {
+				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_Pause();
+				timeEvents[0] = false;
+				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Alarm_Switch_Alarm_On_default();
+				transitioned_after = 0l;
 			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning_react(long transitioned_before) {
-		/* The reactions of state initial_warning. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<1l) {
-			if (timer.getCounter()<=0l) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_initial_warning();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning_default();
-				_FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_react(1l);
-				transitioned_after = 1l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_Level_final_warning_react(long transitioned_before) {
-		/* The reactions of state final_warning. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<1l) {
-			if (mode.danger) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Warning();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger_default();
-				transitioned_after = 1l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Status_Warning_react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Status_Danger_react(long transitioned_before) {
-		/* The reactions of state Danger. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<1l) {
-			if ((mode.safe || alarm.off)) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Danger();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Status_Safe_default();
-				transitioned_after = 1l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Status_Danger__911_activated___911_emergency_Activated_react(long transitioned_before) {
-		/* The reactions of state 911_emergency_Activated. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Status_Danger_react(transitioned_before);
 		}
 		return transitioned_after;
 	}
@@ -1845,122 +1179,19 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__react(long transitioned_before) {
 		/* The reactions of state <Sensor_Triggered>. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if ((mode.safe || alarm.off)) {
+		if (transitioned_after<1l) {
+			if (((timeEvents[1]) && (!(sensors.getTriggerSignal_received())))) {
 				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
+				timeEvents[1] = false;
 				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring__default();
-				transitioned_after = 4l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__smokeSensor__Monitoring_Smoke_Level__react(long transitioned_before) {
-		/* The reactions of state <Monitoring_Smoke_Level>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if (sensors.getSmoke_value()>=sensors.getSmoke_threshold()) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
-				message.setSensor("Smoke threshold has been reached");
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__default();
-				transitioned_after = 2l;
+				_FireAlarm_Unit___Fire_Alarm_Running__react(0l);
+				transitioned_after = 1l;
 			}
 		}
 		/* If no transition was taken */
 		if (transitioned_after==transitioned_before) {
 			/* then execute local reactions. */
-			if (((timeEvents[0]) && (sensors.getSmoke_presence()))) {
-				sensors.setSmoke_value(sensors.getSmoke_value() + (sensors.smoke_increment));
-				message.setSensor("Smoke Presence Detected");
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__carbonSensor__Monitoring_Carbon_Level__react(long transitioned_before) {
-		/* The reactions of state <Monitoring_Carbon_Level>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<3l) {
-			if (sensors.getCarbon_value()>=sensors.getCarbon_threshold()) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
-				message.setSensor("Carbon threshold has been reached");
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__default();
-				transitioned_after = 3l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			if (((timeEvents[1]) && (sensors.getCarbon_presence()))) {
-				sensors.setCarbon_value(sensors.getCarbon_value() + (sensors.carbon_increment));
-				message.setSensor("Carbon Presence Detected");
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__heatSensor__Monitoring_Heat_Level__react(long transitioned_before) {
-		/* The reactions of state <Monitoring_Heat_Level>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<4l) {
-			if (sensors.getHeat_value()>=sensors.getHeat_threshold()) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered_();
-				message.setSensor("Heat threshold has been reached");
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__default();
-				transitioned_after = 4l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			if (((timeEvents[2]) && (sensors.getHeat_presence()))) {
-				sensors.setHeat_value(sensors.getHeat_value() + (sensors.heat_increment));
-				message.setSensor("Heat Presence Detected");
-			}
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__react(long transitioned_before) {
-		/* The reactions of state <Threshold_Reached>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if ((mode.safe || alarm.off)) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached_();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring__default();
-				transitioned_after = 2l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning_react(long transitioned_before) {
-		/* The reactions of state SensorWarning. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if (mode.danger) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SensorWarning();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm_default();
-				_FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__react(2l);
-				transitioned_after = 2l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__warning_before_sounding_SoundAlarm_react(long transitioned_before) {
-		/* The reactions of state SoundAlarm. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Threshold_Reached__react(transitioned_before);
+			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__react(transitioned_before);
 		}
 		return transitioned_after;
 	}
@@ -1968,32 +1199,13 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 	private long _FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring__react(long transitioned_before) {
 		/* The reactions of state <Sensor_Value_Monitoring>. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if (((timeEvents[3]) && (sensors.getTriggerSignal_received()))) {
+		if (transitioned_after<1l) {
+			if (((timeEvents[2]) && (sensors.getTriggerSignal_received()))) {
 				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_();
-				timeEvents[3] = false;
+				timeEvents[2] = false;
 				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__default();
-				transitioned_after = 2l;
-			} else {
-				if ((mode.danger || alarm.on)) {
-					exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Value_Monitoring_();
-					enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Monitoring_Sensor_Level__Sensor_Triggered__default();
-					transitioned_after = 2l;
-				}
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled__react(long transitioned_before) {
-		/* The reactions of state <disabled>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
-			if (timer.enable) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled_();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__default();
 				_FireAlarm_Unit___Fire_Alarm_Running__react(0l);
-				transitioned_after = 5l;
+				transitioned_after = 1l;
 			}
 		}
 		/* If no transition was taken */
@@ -2004,76 +1216,21 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		return transitioned_after;
 	}
 	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__react(long transitioned_before) {
-		/* The reactions of state <timer_running>. */
+	private long _FireAlarm_Unit__Fire_Alarm_Shutdown_react(long transitioned_before) {
+		/* The reactions of state Fire_Alarm_Shutdown. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
-			if (timer.disable) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running_();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__disabled__default();
-				_FireAlarm_Unit___Fire_Alarm_Running__react(0l);
-				transitioned_after = 5l;
-			} else {
-				if (timer.reset) {
-					exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running_();
-					timer.setCounter(10l);
-					enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__default();
-					_FireAlarm_Unit___Fire_Alarm_Running__react(0l);
-					transitioned_after = 5l;
-				}
+		if (transitioned_after<0l) {
+			if (mode.manual_on) {
+				exitSequence__FireAlarm_Unit__Fire_Alarm_Shutdown();
+				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__default();
+				react(0l);
+				transitioned_after = 0l;
 			}
 		}
 		/* If no transition was taken */
 		if (transitioned_after==transitioned_before) {
 			/* then execute local reactions. */
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning__react(long transitioned_before) {
-		/* The reactions of state <final_warning>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
-			if (timer.getCounter()<=0l) {
-				exitSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_();
-				enterSequence__FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended_default();
-				_FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__react(5l);
-				transitioned_after = 5l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			if (timeEvents[4]) {
-				timer.counter--;
-			}
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__initial_warning__react(long transitioned_before) {
-		/* The reactions of state <initial_warning>. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			if (timeEvents[5]) {
-				timer.counter--;
-			}
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__r1__final_warning_ended_react(long transitioned_before) {
-		/* The reactions of state <final_warning_ended. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _FireAlarm_Unit___Fire_Alarm_Running__Timer_Status__timer_running__react(transitioned_before);
+			transitioned_after = react(transitioned_before);
 		}
 		return transitioned_after;
 	}

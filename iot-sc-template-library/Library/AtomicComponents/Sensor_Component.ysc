@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:notation="http://www.eclipse.org/gmf/runtime/1.0.2/notation" xmlns:sgraph="http://www.yakindu.org/sct/sgraph/2.0.0">
-  <sgraph:Statechart xmi:id="_50KAoFsGEe27NrGh0QYi0g" specification="// Use the event driven execution model.&#xA;// Switch to cycle based behavior&#xA;// by specifying '@CycleBased(200)'.&#xA;@EventDriven&#xA;&#xA;// Use @SuperSteps(yes) to enable&#xA;// super step semantics.&#xA;@SuperSteps(no)&#xA;&#xA;interface:&#xA;&#x9;in event on&#xA;&#x9;in event off&#xA;&#x9;in event activitySensed&#xA;&#x9;in event noActivitySensed&#xA;&#x9;&#xA;&#x9;var counter: integer = simulate_detection_timer&#xA;&#x9;var simulate_detection_timer: integer&#xA;&#x9;var activity: boolean = false&#xA;&#x9;var reading: boolean = false&#xA;&#x9;&#xA;&#x9;var activity_sensed: string&#xA;&#x9;&#xA;&#x9;var signalSentToController: boolean&#xA;&#x9;&#xA;&#x9;var sensorData: integer&#xA;&#x9;var EnvironmentData: integer&#xA;" name="Sensor_Component">
+  <sgraph:Statechart xmi:id="_50KAoFsGEe27NrGh0QYi0g" specification="// Use the event driven execution model.&#xA;// Switch to cycle based behavior&#xA;// by specifying '@CycleBased(200)'.&#xA;@EventDriven&#xA;&#xA;// Use @SuperSteps(yes) to enable&#xA;// super step semantics.&#xA;@SuperSteps(no)&#xA;&#xA;interface:&#xA;&#x9;in event on&#xA;&#x9;in event off&#xA;&#x9;in event activitySensed&#xA;&#x9;in event noActivitySensed&#xA;&#x9;&#xA;&#x9;var counter: integer = simulate_detection_timer&#xA;&#x9;var simulate_detection_timer: integer&#xA;&#x9;var activity: boolean = false&#xA;&#x9;var reading: boolean = false&#xA;&#x9;&#xA;&#x9;var activity_sensed: string&#xA;&#x9;&#xA;&#x9;var signalSentToController: boolean&#xA;&#x9;&#xA;&#x9;var sensorData: integer&#xA;&#x9;var EnvironmentData: integer&#xA;&#x9;var threshold = 50&#xA;" name="Sensor_Component">
     <regions xmi:id="_50ND81sGEe27NrGh0QYi0g" name="&lt;Sensor_Component>">
       <vertices xsi:type="sgraph:Entry" xmi:id="_50ND9FsGEe27NrGh0QYi0g">
         <outgoingTransitions xmi:id="_50ND9VsGEe27NrGh0QYi0g" target="_50ND9lsGEe27NrGh0QYi0g"/>
@@ -12,7 +12,7 @@
             <outgoingTransitions xmi:id="_u5eW0HynEe20Y7QtW4jwrg" specification="" target="_AQApwFsHEe27NrGh0QYi0g"/>
           </vertices>
           <vertices xsi:type="sgraph:State" xmi:id="_AQApwFsHEe27NrGh0QYi0g" specification="" name="Under_Threshold" incomingTransitions="_u5eW0HynEe20Y7QtW4jwrg _Wr478JXWEe2EMOiFZfI-BA _NZ-yYLkaEe2RYdCu8GdhNg">
-            <outgoingTransitions xmi:id="_lZU-wITVEe2xcIFyeWpeZw" specification="[sensorData>90]" target="_AQB34FsHEe27NrGh0QYi0g"/>
+            <outgoingTransitions xmi:id="_lZU-wITVEe2xcIFyeWpeZw" specification="[sensorData>threshold]" target="_AQB34FsHEe27NrGh0QYi0g"/>
             <outgoingTransitions xmi:id="_NZ-yYLkaEe2RYdCu8GdhNg" specification="after 1s [activity]/&#xA;raise activitySensed" target="_AQApwFsHEe27NrGh0QYi0g"/>
           </vertices>
           <vertices xsi:type="sgraph:State" xmi:id="_AQB34FsHEe27NrGh0QYi0g" specification="" name="Threshold_Reached" incomingTransitions="_lZU-wITVEe2xcIFyeWpeZw _Oj_EEL-AEe2QgdusvWshVw">

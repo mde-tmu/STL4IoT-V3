@@ -55,7 +55,7 @@ public class Simulation{
 	public static void SendInputFileToStatechart(SmartHubSystem SmartHubSystem) {
 		for(int i=0 ; i<input.length; i++){
 			inputNum = Long.parseLong(input[i]);
-			/**SmartHubSystem.getSF().getCarbonSensor().setEnvironmentData(inputNum);
+			/**SmartHubSystem.getSF().getFlameSensor().setEnvironmentData(inputNum);
 			SmartHubSystem.getSF().getSmokeSensor().setEnvironmentData(inputNum);
 			SmartHubSystem.getSF().getHeatSensor().setEnvironmentData(inputNum);**/
 	     }

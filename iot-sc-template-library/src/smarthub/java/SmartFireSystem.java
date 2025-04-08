@@ -5,15 +5,15 @@ import com.yakindu.core.IEventDriven;
 import com.yakindu.core.IStatemachine;
 import com.yakindu.core.ITimed;
 import com.yakindu.core.ITimerService;
+import com.yakindu.core.rx.Observer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import smarthub.java.Actuator_Component;
-import smarthub.java.Controller_Component;
+import smarthub.java.Actuator_Component_2;
 import smarthub.java.DeviceTemp_Component;
 import smarthub.java.FireAlarm_Unit;
 import smarthub.java.Network_Component;
 import smarthub.java.Power_Component;
-import smarthub.java.Sensor_Component;
+import smarthub.java.Sensor_Component_Fire;
 
 public class SmartFireSystem implements ITimed, IEventDriven {
 	public static class System {
@@ -65,6 +65,18 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 			synchronized(parent) {
 				parent.inEventQueue.add(() -> {
 					disconnect_network = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
+		private boolean sensor_active;
+		
+		
+		public void raiseSensor_active() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					sensor_active = true;
 				});
 				parent.runCycle();
 			}
@@ -132,17 +144,17 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 			}
 		}
 		
-		private long carbon_detection_time;
+		private long flame_detection_time;
 		
-		public synchronized long getCarbon_detection_time() {
+		public synchronized long getFlame_detection_time() {
 			synchronized(parent) {
-				return carbon_detection_time;
+				return flame_detection_time;
 			}
 		}
 		
-		public void setCarbon_detection_time(long value) {
+		public void setFlame_detection_time(long value) {
 			synchronized(parent) {
-				this.carbon_detection_time = value;
+				this.flame_detection_time = value;
 			}
 		}
 		
@@ -198,10 +210,10 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		
 	}
 	
-	public static class CarbonSensorOutput {
+	public static class FlameSensorOutput {
 		private SmartFireSystem parent;
 		
-		public CarbonSensorOutput(SmartFireSystem parent) {
+		public FlameSensorOutput(SmartFireSystem parent) {
 			this.parent = parent;
 		}
 		private long counter;
@@ -312,7 +324,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	
 	protected SensorOutput sensorOutput;
 	
-	protected CarbonSensorOutput carbonSensorOutput;
+	protected FlameSensorOutput flameSensorOutput;
 	
 	protected HeatSensorOutput heatSensorOutput;
 	
@@ -320,30 +332,25 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	
 	public enum State {
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_OFF,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ON,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_INACTIVE,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ACTIVE,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__ACTUATOR_ONSTANDBY_,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__DEVICE_ACTUATED_,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__ACTUATOR_OFF_,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON_,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT_OFF,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON_,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT_,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_INACTIVE,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_ACTIVE,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_INACTIVE,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_ACTIVE,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_INACTIVE,
+		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT_,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT_OFF,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT_,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_,
 		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT_,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_,
-		_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT_OFF,
 		$NULLSTATE$
 	};
 	
@@ -351,9 +358,17 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	
 	private ITimerService timerService;
 	
-	private final boolean[] timeEvents = new boolean[8];
+	private final boolean[] timeEvents = new boolean[3];
 	
 	private BlockingQueue<Runnable> inEventQueue = new LinkedBlockingQueue<Runnable>();
+	private boolean fireAlarm_Alarm_on;
+	private boolean fireAlarm_Alarm_off;
+	private boolean flameSensor_overThreshold;
+	private boolean flameSensor_underThreshold;
+	private boolean smokeSensor_overThreshold;
+	private boolean smokeSensor_underThreshold;
+	private boolean heatSensor_overThreshold;
+	private boolean heatSensor_underThreshold;
 	private boolean isExecuting;
 	
 	protected boolean getIsExecuting() {
@@ -384,7 +399,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		system = new System(this);
 		sensorInput = new SensorInput(this);
 		sensorOutput = new SensorOutput(this);
-		carbonSensorOutput = new CarbonSensorOutput(this);
+		flameSensorOutput = new FlameSensorOutput(this);
 		heatSensorOutput = new HeatSensorOutput(this);
 		smokeSensorOutput = new SmokeSensorOutput(this);
 		for (int i = 0; i < 7; i++) {
@@ -395,8 +410,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		
 		/* Default init sequence for statechart SmartFireSystem */
 		setActuator(null);
-		setController(null);
-		setCarbonSensor(null);
+		setFlameSensor(null);
 		setSmokeSensor(null);
 		setHeatSensor(null);
 		setWiFi(null);
@@ -412,12 +426,12 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		system.setIsOn(false);
 		system.setAlarm_status(false);
 		sensorInput.setSmoke_detection_time(9l);
-		sensorInput.setCarbon_detection_time(12l);
+		sensorInput.setFlame_detection_time(11l);
 		sensorInput.setHeat_detection_time(10l);
 		sensorOutput.setActivity(false);
 		sensorOutput.setDetected("");
-		carbonSensorOutput.setCounter(0l);
-		carbonSensorOutput.setActivity(false);
+		flameSensorOutput.setCounter(0l);
+		flameSensorOutput.setActivity(false);
 		heatSensorOutput.setCounter(0l);
 		heatSensorOutput.setActivity(false);
 		smokeSensorOutput.setCounter(0l);
@@ -472,26 +486,30 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		system.off = false;
 		system.connect_network = false;
 		system.disconnect_network = false;
+		system.sensor_active = false;
 		sensorInput.reset = false;
+		fireAlarm_Alarm_on = false;
+		fireAlarm_Alarm_off = false;
+		flameSensor_overThreshold = false;
+		flameSensor_underThreshold = false;
+		smokeSensor_overThreshold = false;
+		smokeSensor_underThreshold = false;
+		heatSensor_overThreshold = false;
+		heatSensor_underThreshold = false;
 		timeEvents[0] = false;
 		timeEvents[1] = false;
 		timeEvents[2] = false;
-		timeEvents[3] = false;
-		timeEvents[4] = false;
-		timeEvents[5] = false;
-		timeEvents[6] = false;
-		timeEvents[7] = false;
 	}
 	
 	private void microStep() {
 		long transitioned = -1l;
 		stateConfVectorPosition = 0l;
 		switch (stateVector[0]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_OFF:
-			transitioned = _SmartFiresystem__SmartFireSystem_DeviceStatus_off_react(transitioned);
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_INACTIVE:
+			transitioned = _SmartFiresystem__SmartFireSystem_DeviceStatus_inactive_react(transitioned);
 			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ON:
-			transitioned = _SmartFiresystem__SmartFireSystem_DeviceStatus_on_react(transitioned);
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ACTIVE:
+			transitioned = _SmartFiresystem__SmartFireSystem_DeviceStatus_active_react(transitioned);
 			break;
 		default:
 			break;
@@ -513,11 +531,14 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		}
 		if (getStateConfVectorPosition()<2l) {
 			switch (stateVector[2]) {
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_:
-				transitioned = _SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component__react(transitioned);
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF:
+				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_off_react(transitioned);
 				break;
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT_OFF:
-				transitioned = _SmartFiresystem__SmartFireSystem_ControllerComponent_off_react(transitioned);
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_INACTIVE:
+				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive_react(transitioned);
+				break;
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_ACTIVE:
+				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active_react(transitioned);
 				break;
 			default:
 				break;
@@ -525,20 +546,11 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		}
 		if (getStateConfVectorPosition()<3l) {
 			switch (stateVector[3]) {
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED:
-				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected_react(transitioned);
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_INACTIVE:
+				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive_react(transitioned);
 				break;
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED:
-				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected_react(transitioned);
-				break;
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED:
-				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected_react(transitioned);
-				break;
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_:
-				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final__react(transitioned);
-				break;
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF:
-				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_off_react(transitioned);
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_ACTIVE:
+				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active_react(transitioned);
 				break;
 			default:
 				break;
@@ -546,6 +558,18 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		}
 		if (getStateConfVectorPosition()<4l) {
 			switch (stateVector[4]) {
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_INACTIVE:
+				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive_react(transitioned);
+				break;
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE:
+				transitioned = _SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active_react(transitioned);
+				break;
+			default:
+				break;
+			}
+		}
+		if (getStateConfVectorPosition()<5l) {
+			switch (stateVector[5]) {
 			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_:
 				transitioned = _SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates__react(transitioned);
 				break;
@@ -556,25 +580,13 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 				break;
 			}
 		}
-		if (getStateConfVectorPosition()<5l) {
-			switch (stateVector[5]) {
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_:
-				transitioned = _SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates__react(transitioned);
-				break;
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF:
-				transitioned = _SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off_react(transitioned);
-				break;
-			default:
-				break;
-			}
-		}
 		if (getStateConfVectorPosition()<6l) {
 			switch (stateVector[6]) {
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_:
-				_SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates__react(transitioned);
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_:
+				_SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates__react(transitioned);
 				break;
-			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT_OFF:
-				_SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off_react(transitioned);
+			case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF:
+				_SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off_react(transitioned);
 				break;
 			default:
 				break;
@@ -615,61 +627,48 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		switch (state) {
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM:
 			return stateVector[0].ordinal() >= State.
-					_SMARTFIRESYSTEM__SMARTFIRESYSTEM.ordinal()&& stateVector[0].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT_OFF.ordinal();
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_OFF:
-			return stateVector[0] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_OFF;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ON:
-			return stateVector[0] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ON;
+					_SMARTFIRESYSTEM__SMARTFIRESYSTEM.ordinal()&& stateVector[0].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF.ordinal();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_INACTIVE:
+			return stateVector[0] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_INACTIVE;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ACTIVE:
+			return stateVector[0] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ACTIVE;
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__ACTUATOR_ONSTANDBY_:
 			return stateVector[1] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__ACTUATOR_ONSTANDBY_;
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__DEVICE_ACTUATED_:
 			return stateVector[1] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__DEVICE_ACTUATED_;
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__ACTUATOR_OFF_:
 			return stateVector[1] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_ACTUATORCOMPONENT__ACTUATOR_OFF_;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON_:
-			return stateVector[2].ordinal() >= State.
-					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON_.ordinal()&& stateVector[2].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_.ordinal();
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_:
-			return stateVector[2] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT_OFF:
-			return stateVector[2] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT_OFF;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON_:
-			return stateVector[3].ordinal() >= State.
-					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON_.ordinal()&& stateVector[3].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_.ordinal();
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT_:
-			return stateVector[3].ordinal() >= State.
-					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT_.ordinal()&& stateVector[3].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_.ordinal();
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED:
-			return stateVector[3] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED:
-			return stateVector[3] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED:
-			return stateVector[3] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_:
-			return stateVector[3] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_;
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF:
-			return stateVector[3] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF;
+			return stateVector[2] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON:
+			return stateVector[2].ordinal() >= State.
+					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON.ordinal()&& stateVector[2].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE.ordinal();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_INACTIVE:
+			return stateVector[2] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_INACTIVE;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_ACTIVE:
+			return stateVector[2] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_ACTIVE;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_INACTIVE:
+			return stateVector[3] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_INACTIVE;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_ACTIVE:
+			return stateVector[3] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_ACTIVE;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_INACTIVE:
+			return stateVector[4] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_INACTIVE;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE:
+			return stateVector[4] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE;
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT_:
-			return stateVector[4].ordinal() >= State.
-					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT_.ordinal()&& stateVector[4].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_.ordinal();
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_:
-			return stateVector[4] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT_OFF:
-			return stateVector[4] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT_OFF;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT_:
 			return stateVector[5].ordinal() >= State.
-					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT_.ordinal()&& stateVector[5].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_.ordinal();
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_:
-			return stateVector[5] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF:
-			return stateVector[5] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT_:
+					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT_.ordinal()&& stateVector[5].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_.ordinal();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_:
+			return stateVector[5] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT_OFF:
+			return stateVector[5] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT_OFF;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT_:
 			return stateVector[6].ordinal() >= State.
-					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT_.ordinal()&& stateVector[6].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_.ordinal();
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_:
-			return stateVector[6] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT_OFF:
-			return stateVector[6] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT_OFF;
+					_SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT_.ordinal()&& stateVector[6].ordinal() <= State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_.ordinal();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_:
+			return stateVector[6] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF:
+			return stateVector[6] == State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF;
 		default:
 			return false;
 		}
@@ -702,8 +701,8 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		return sensorOutput;
 	}
 	
-	public CarbonSensorOutput carbonSensorOutput() {
-		return carbonSensorOutput;
+	public FlameSensorOutput flameSensorOutput() {
+		return flameSensorOutput;
 	}
 	
 	public HeatSensorOutput heatSensorOutput() {
@@ -715,73 +714,206 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	}
 	
 	
-	private Actuator_Component actuator;
+	protected void raiseFireAlarm_Alarm_on() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				fireAlarm_Alarm_on = true;
+			});
+			runCycle();
+		}
+	}
 	
-	public synchronized Actuator_Component getActuator() {
+	protected void raiseFireAlarm_Alarm_off() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				fireAlarm_Alarm_off = true;
+			});
+			runCycle();
+		}
+	}
+	
+	protected void raiseFlameSensor_overThreshold() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				flameSensor_overThreshold = true;
+			});
+			runCycle();
+		}
+	}
+	
+	protected void raiseFlameSensor_underThreshold() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				flameSensor_underThreshold = true;
+			});
+			runCycle();
+		}
+	}
+	
+	protected void raiseSmokeSensor_overThreshold() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				smokeSensor_overThreshold = true;
+			});
+			runCycle();
+		}
+	}
+	
+	protected void raiseSmokeSensor_underThreshold() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				smokeSensor_underThreshold = true;
+			});
+			runCycle();
+		}
+	}
+	
+	protected void raiseHeatSensor_overThreshold() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				heatSensor_overThreshold = true;
+			});
+			runCycle();
+		}
+	}
+	
+	protected void raiseHeatSensor_underThreshold() {
+		synchronized(SmartFireSystem.this) {
+			inEventQueue.add(() -> {
+				heatSensor_underThreshold = true;
+			});
+			runCycle();
+		}
+	}
+	
+	private Actuator_Component_2 actuator;
+	
+	public synchronized Actuator_Component_2 getActuator() {
 		synchronized(SmartFireSystem.this) {
 			return actuator;
 		}
 	}
 	
-	public void setActuator(Actuator_Component value) {
+	public void setActuator(Actuator_Component_2 value) {
 		synchronized(SmartFireSystem.this) {
 			this.actuator = value;
 		}
 	}
 	
-	private Controller_Component controller;
+	private Sensor_Component_Fire flameSensor;
 	
-	public synchronized Controller_Component getController() {
+	private Observer<Void> FlameSensor_overThreshold_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseFlameSensor_overThreshold();
+		}
+	};
+	
+	private Observer<Void> FlameSensor_underThreshold_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseFlameSensor_underThreshold();
+		}
+	};
+	
+	
+	public synchronized Sensor_Component_Fire getFlameSensor() {
 		synchronized(SmartFireSystem.this) {
-			return controller;
+			return flameSensor;
 		}
 	}
 	
-	public void setController(Controller_Component value) {
+	public void setFlameSensor(Sensor_Component_Fire value) {
 		synchronized(SmartFireSystem.this) {
-			this.controller = value;
+			if (this.flameSensor != null) {
+				this.flameSensor.getOverThreshold().unsubscribe(FlameSensor_overThreshold_observer);
+				this.flameSensor.getUnderThreshold().unsubscribe(FlameSensor_underThreshold_observer);
+			}
+			
+			this.flameSensor = value;
+			
+			if (this.flameSensor != null) {
+				this.flameSensor.getOverThreshold().subscribe(FlameSensor_overThreshold_observer);
+				this.flameSensor.getUnderThreshold().subscribe(FlameSensor_underThreshold_observer);
+			}
 		}
 	}
 	
-	private Sensor_Component carbonSensor;
+	private Sensor_Component_Fire smokeSensor;
 	
-	public synchronized Sensor_Component getCarbonSensor() {
-		synchronized(SmartFireSystem.this) {
-			return carbonSensor;
+	private Observer<Void> SmokeSensor_overThreshold_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseSmokeSensor_overThreshold();
 		}
-	}
+	};
 	
-	public void setCarbonSensor(Sensor_Component value) {
-		synchronized(SmartFireSystem.this) {
-			this.carbonSensor = value;
+	private Observer<Void> SmokeSensor_underThreshold_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseSmokeSensor_underThreshold();
 		}
-	}
+	};
 	
-	private Sensor_Component smokeSensor;
 	
-	public synchronized Sensor_Component getSmokeSensor() {
+	public synchronized Sensor_Component_Fire getSmokeSensor() {
 		synchronized(SmartFireSystem.this) {
 			return smokeSensor;
 		}
 	}
 	
-	public void setSmokeSensor(Sensor_Component value) {
+	public void setSmokeSensor(Sensor_Component_Fire value) {
 		synchronized(SmartFireSystem.this) {
+			if (this.smokeSensor != null) {
+				this.smokeSensor.getOverThreshold().unsubscribe(SmokeSensor_overThreshold_observer);
+				this.smokeSensor.getUnderThreshold().unsubscribe(SmokeSensor_underThreshold_observer);
+			}
+			
 			this.smokeSensor = value;
+			
+			if (this.smokeSensor != null) {
+				this.smokeSensor.getOverThreshold().subscribe(SmokeSensor_overThreshold_observer);
+				this.smokeSensor.getUnderThreshold().subscribe(SmokeSensor_underThreshold_observer);
+			}
 		}
 	}
 	
-	private Sensor_Component heatSensor;
+	private Sensor_Component_Fire heatSensor;
 	
-	public synchronized Sensor_Component getHeatSensor() {
+	private Observer<Void> HeatSensor_overThreshold_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseHeatSensor_overThreshold();
+		}
+	};
+	
+	private Observer<Void> HeatSensor_underThreshold_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseHeatSensor_underThreshold();
+		}
+	};
+	
+	
+	public synchronized Sensor_Component_Fire getHeatSensor() {
 		synchronized(SmartFireSystem.this) {
 			return heatSensor;
 		}
 	}
 	
-	public void setHeatSensor(Sensor_Component value) {
+	public void setHeatSensor(Sensor_Component_Fire value) {
 		synchronized(SmartFireSystem.this) {
+			if (this.heatSensor != null) {
+				this.heatSensor.getOverThreshold().unsubscribe(HeatSensor_overThreshold_observer);
+				this.heatSensor.getUnderThreshold().unsubscribe(HeatSensor_underThreshold_observer);
+			}
+			
 			this.heatSensor = value;
+			
+			if (this.heatSensor != null) {
+				this.heatSensor.getOverThreshold().subscribe(HeatSensor_overThreshold_observer);
+				this.heatSensor.getUnderThreshold().subscribe(HeatSensor_underThreshold_observer);
+			}
 		}
 	}
 	
@@ -829,6 +961,21 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	
 	private FireAlarm_Unit fireAlarm;
 	
+	private Observer<Void> FireAlarm_Alarm_on_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseFireAlarm_Alarm_on();
+		}
+	};
+	
+	private Observer<Void> FireAlarm_Alarm_off_observer = new Observer<Void>() {
+		@Override
+		public void next(Void value) {
+			raiseFireAlarm_Alarm_off();
+		}
+	};
+	
+	
 	public synchronized FireAlarm_Unit getFireAlarm() {
 		synchronized(SmartFireSystem.this) {
 			return fireAlarm;
@@ -837,7 +984,17 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	
 	public void setFireAlarm(FireAlarm_Unit value) {
 		synchronized(SmartFireSystem.this) {
+			if (this.fireAlarm != null) {
+				this.fireAlarm.alarm().getOn().unsubscribe(FireAlarm_Alarm_on_observer);
+				this.fireAlarm.alarm().getOff().unsubscribe(FireAlarm_Alarm_off_observer);
+			}
+			
 			this.fireAlarm = value;
+			
+			if (this.fireAlarm != null) {
+				this.fireAlarm.alarm().getOn().subscribe(FireAlarm_Alarm_on_observer);
+				this.fireAlarm.alarm().getOff().subscribe(FireAlarm_Alarm_off_observer);
+			}
 		}
 	}
 	
@@ -925,44 +1082,30 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		}
 	}
 	
-	/* Entry action for state 'off'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_off() {
-		/* Entry action for state 'off'. */
-		system.setIsOn(false);
-		system.setAlarm_status(fireAlarm.alarm().getSound());
-		getPower().raiseOff();
-		getCarbonSensor().raiseOff();
-		getSmokeSensor().raiseOff();
-		getHeatSensor().raiseOff();
+	/* Entry action for state 'inactive'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive() {
+		/* Entry action for state 'inactive'. */
+		fireAlarm.sensors().setTriggerSignal_received(false);
 	}
 	
-	/* Entry action for state 'on'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_on() {
-		/* Entry action for state 'on'. */
-		timerService.setTimer(this, 0, 500l, false);
-		system.setIsOn(true);
-		system.setAlarm_status(fireAlarm.alarm().getSound());
-		setMessage(fireAlarm.message().getStatus());
-		getPower().raiseOn();
-		getCarbonSensor().raiseOn();
-		getSmokeSensor().raiseOn();
-		getHeatSensor().raiseOn();
+	/* Entry action for state 'active'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_active() {
+		/* Entry action for state 'active'. */
+		timerService.setTimer(this, 0, (1l * 1000l), true);
+		fireAlarm.sensors().setTriggerSignal_received(true);
 	}
 	
 	/* Entry action for state '<Actuator_OnStandby>'. */
 	private void entryAction__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby_() {
 		/* Entry action for state '<Actuator_OnStandby>'. */
-		timerService.setTimer(this, 1, 100l, false);
 		actuator.power().setDeviceInput(power_input);
-		fireAlarm.sensors().setTriggerSignal_received(actuator.getIsTriggered());
+		actuator.setIsTriggered(false);
 	}
 	
 	/* Entry action for state '<Device_Actuated>'. */
 	private void entryAction__SmartFiresystem__SmartFireSystem_ActuatorComponent__Device_Actuated_() {
 		/* Entry action for state '<Device_Actuated>'. */
-		timerService.setTimer(this, 2, 500l, true);
-		system.raiseOn();
-		setMessage(fireAlarm.message().getStatus());
+		actuator.setIsTriggered(true);
 	}
 	
 	/* Entry action for state '<Actuator_off>'. */
@@ -970,84 +1113,67 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		/* Entry action for state '<Actuator_off>'. */
 		getActuator().raiseOff();
 		actuator.power().setRequired(power_required);
-		system.setAlarm_status(fireAlarm.alarm().getSound());
-	}
-	
-	/* Entry action for state '<Controller_Component>'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_() {
-		/* Entry action for state '<Controller_Component>'. */
-		timerService.setTimer(this, 3, 500l, false);
-		controller.sensors().setTriggered(sensorOutput.activity);
-		controller.setActivity(sensorOutput.activity);
-		actuator.setIsTriggered(controller.actuator().getTriggered());
-	}
-	
-	/* Entry action for state 'off'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_ControllerComponent_off() {
-		/* Entry action for state 'off'. */
-		getController().raiseOff();
-	}
-	
-	/* Entry action for state '<Sensor_Component_isON>'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON_() {
-		/* Entry action for state '<Sensor_Component_isON>'. */
-		getCarbonSensor().raiseOn();
-		getSmokeSensor().raiseOn();
-		getHeatSensor().raiseOn();
-		smokeSensor.setSimulate_detection_timer(sensorInput.smoke_detection_time);
-		carbonSensor.setSimulate_detection_timer(sensorInput.carbon_detection_time);
-		heatSensor.setSimulate_detection_timer(sensorInput.heat_detection_time);
-	}
-	
-	/* Entry action for state '<Sensor_Component>'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_() {
-		/* Entry action for state '<Sensor_Component>'. */
-		timerService.setTimer(this, 4, 200l, false);
-		carbonSensorOutput.setActivity(carbonSensor.getActivity());
-		carbonSensorOutput.setCounter(carbonSensor.getCounter());
-		heatSensorOutput.setActivity(heatSensor.getActivity());
-		heatSensorOutput.setCounter(heatSensor.getCounter());
-		smokeSensorOutput.setActivity(smokeSensor.getActivity());
-		smokeSensorOutput.setCounter(smokeSensor.getCounter());
-	}
-	
-	/* Entry action for state 'CarbonDetected'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected() {
-		/* Entry action for state 'CarbonDetected'. */
-		sensorOutput.setActivity(carbonSensorOutput.activity);
-		sensorOutput.setDetected("Carbon Detected");
-	}
-	
-	/* Entry action for state 'SmokeDetected'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected() {
-		/* Entry action for state 'SmokeDetected'. */
-		sensorOutput.setActivity(smokeSensorOutput.activity);
-		sensorOutput.setDetected("Smoke Detected");
-	}
-	
-	/* Entry action for state 'HeatDetected'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected() {
-		/* Entry action for state 'HeatDetected'. */
-		sensorOutput.setActivity(heatSensorOutput.activity);
-		sensorOutput.setDetected("Heat Detected");
 	}
 	
 	/* Entry action for state 'off'. */
 	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_off() {
 		/* Entry action for state 'off'. */
-		getCarbonSensor().raiseOff();
+		getFlameSensor().raiseOff();
 		getSmokeSensor().raiseOff();
 		getHeatSensor().raiseOff();
-		sensorOutput.setActivity(false);
-		smokeSensor.setSimulate_detection_timer(sensorInput.smoke_detection_time);
-		carbonSensor.setSimulate_detection_timer(sensorInput.carbon_detection_time);
-		heatSensor.setSimulate_detection_timer(sensorInput.heat_detection_time);
+	}
+	
+	/* Entry action for state 'on'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on() {
+		/* Entry action for state 'on'. */
+		getFlameSensor().raiseOn();
+		getSmokeSensor().raiseOn();
+		getHeatSensor().raiseOn();
+	}
+	
+	/* Entry action for state 'inactive'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive() {
+		/* Entry action for state 'inactive'. */
+		flameSensorOutput.setActivity(false);
+	}
+	
+	/* Entry action for state 'active'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active() {
+		/* Entry action for state 'active'. */
+		system.raiseSensor_active();
+		flameSensorOutput.setActivity(true);
+	}
+	
+	/* Entry action for state 'inactive'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive() {
+		/* Entry action for state 'inactive'. */
+		smokeSensorOutput.setActivity(false);
+	}
+	
+	/* Entry action for state 'active'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active() {
+		/* Entry action for state 'active'. */
+		system.raiseSensor_active();
+		smokeSensorOutput.setActivity(true);
+	}
+	
+	/* Entry action for state 'inactive'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive() {
+		/* Entry action for state 'inactive'. */
+		heatSensorOutput.setActivity(false);
+	}
+	
+	/* Entry action for state 'active'. */
+	private void entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active() {
+		/* Entry action for state 'active'. */
+		system.raiseSensor_active();
+		heatSensorOutput.setActivity(true);
 	}
 	
 	/* Entry action for state '<Network_Connection_Updates>'. */
 	private void entryAction__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_() {
 		/* Entry action for state '<Network_Connection_Updates>'. */
-		timerService.setTimer(this, 5, 500l, false);
+		timerService.setTimer(this, 1, 500l, false);
 		setWiFi_connection(wiFi.getConnection());
 	}
 	
@@ -1060,7 +1186,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	/* Entry action for state '<Power_Consumption_Updates>'. */
 	private void entryAction__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_() {
 		/* Entry action for state '<Power_Consumption_Updates>'. */
-		timerService.setTimer(this, 6, 500l, false);
+		timerService.setTimer(this, 2, 500l, false);
 		power.device().setIsOn(system.isOn);
 		power.setKilowatt(power_input);
 		setPower_total(power.getKWh());
@@ -1072,35 +1198,10 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		getPower().raiseOff();
 	}
 	
-	/* Entry action for state '<Temperature_Updates>'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_() {
-		/* Entry action for state '<Temperature_Updates>'. */
-		timerService.setTimer(this, 7, 500l, false);
-		setTemp_value(temp.heat().getLevel());
-	}
-	
-	/* Entry action for state 'off'. */
-	private void entryAction__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off() {
-		/* Entry action for state 'off'. */
-		temp.device().setIsOn(system.isOn);
-	}
-	
-	/* Exit action for state 'on'. */
-	private void exitAction__SmartFiresystem__SmartFireSystem_DeviceStatus_on() {
-		/* Exit action for state 'on'. */
+	/* Exit action for state 'active'. */
+	private void exitAction__SmartFiresystem__SmartFireSystem_DeviceStatus_active() {
+		/* Exit action for state 'active'. */
 		timerService.unsetTimer(this, 0);
-	}
-	
-	/* Exit action for state '<Actuator_OnStandby>'. */
-	private void exitAction__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby_() {
-		/* Exit action for state '<Actuator_OnStandby>'. */
-		timerService.unsetTimer(this, 1);
-	}
-	
-	/* Exit action for state '<Device_Actuated>'. */
-	private void exitAction__SmartFiresystem__SmartFireSystem_ActuatorComponent__Device_Actuated_() {
-		/* Exit action for state '<Device_Actuated>'. */
-		timerService.unsetTimer(this, 2);
 	}
 	
 	/* Exit action for state '<Actuator_off>'. */
@@ -1109,28 +1210,10 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		getActuator().raiseOn();
 	}
 	
-	/* Exit action for state '<Controller_Component>'. */
-	private void exitAction__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_() {
-		/* Exit action for state '<Controller_Component>'. */
-		timerService.unsetTimer(this, 3);
-	}
-	
-	/* Exit action for state 'off'. */
-	private void exitAction__SmartFiresystem__SmartFireSystem_ControllerComponent_off() {
-		/* Exit action for state 'off'. */
-		getController().raiseOn();
-	}
-	
-	/* Exit action for state '<Sensor_Component>'. */
-	private void exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_() {
-		/* Exit action for state '<Sensor_Component>'. */
-		timerService.unsetTimer(this, 4);
-	}
-	
 	/* Exit action for state '<Network_Connection_Updates>'. */
 	private void exitAction__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_() {
 		/* Exit action for state '<Network_Connection_Updates>'. */
-		timerService.unsetTimer(this, 5);
+		timerService.unsetTimer(this, 1);
 	}
 	
 	/* Exit action for state 'off'. */
@@ -1142,7 +1225,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	/* Exit action for state '<Power_Consumption_Updates>'. */
 	private void exitAction__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_() {
 		/* Exit action for state '<Power_Consumption_Updates>'. */
-		timerService.unsetTimer(this, 6);
+		timerService.unsetTimer(this, 2);
 	}
 	
 	/* Exit action for state 'off'. */
@@ -1151,37 +1234,29 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		getPower().raiseOn();
 	}
 	
-	/* Exit action for state '<Temperature_Updates>'. */
-	private void exitAction__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_() {
-		/* Exit action for state '<Temperature_Updates>'. */
-		timerService.unsetTimer(this, 7);
-	}
-	
 	/* 'default' enter sequence for state SmartFireSystem */
 	private void enterSequence__SmartFiresystem__SmartFireSystem_default() {
 		/* 'default' enter sequence for state SmartFireSystem */
 		enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_default();
 		enterSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent_default();
-		enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_default();
 		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_default();
 		enterSequence__SmartFiresystem__SmartFireSystem_NetworkComponent_default();
 		enterSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_default();
-		enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_default();
 	}
 	
-	/* 'default' enter sequence for state off */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_off_default() {
-		/* 'default' enter sequence for state off */
-		entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_off();
-		stateVector[0] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_OFF;
+	/* 'default' enter sequence for state inactive */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive_default() {
+		/* 'default' enter sequence for state inactive */
+		entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive();
+		stateVector[0] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_INACTIVE;
 		stateConfVectorPosition = 0;
 	}
 	
-	/* 'default' enter sequence for state on */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_on_default() {
-		/* 'default' enter sequence for state on */
-		entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_on();
-		stateVector[0] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ON;
+	/* 'default' enter sequence for state active */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_active_default() {
+		/* 'default' enter sequence for state active */
+		entryAction__SmartFiresystem__SmartFireSystem_DeviceStatus_active();
+		stateVector[0] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ACTIVE;
 		stateConfVectorPosition = 0;
 	}
 	
@@ -1209,79 +1284,69 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		stateConfVectorPosition = 1;
 	}
 	
-	/* 'default' enter sequence for state <Controller_Component_isON> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON__default() {
-		/* 'default' enter sequence for state <Controller_Component_isON> */
-		enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates__default();
-	}
-	
-	/* 'default' enter sequence for state <Controller_Component> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component__default() {
-		/* 'default' enter sequence for state <Controller_Component> */
-		entryAction__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_();
-		stateVector[2] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_;
-		stateConfVectorPosition = 2;
-	}
-	
-	/* 'default' enter sequence for state off */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_off_default() {
-		/* 'default' enter sequence for state off */
-		entryAction__SmartFiresystem__SmartFireSystem_ControllerComponent_off();
-		stateVector[2] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT_OFF;
-		stateConfVectorPosition = 2;
-	}
-	
-	/* 'default' enter sequence for state <Sensor_Component_isON> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON__default() {
-		/* 'default' enter sequence for state <Sensor_Component_isON> */
-		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON_();
-		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring__default();
-	}
-	
-	/* 'default' enter sequence for state <Sensor_Component> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__default() {
-		/* 'default' enter sequence for state <Sensor_Component> */
-		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__default();
-	}
-	
-	/* 'default' enter sequence for state CarbonDetected */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected_default() {
-		/* 'default' enter sequence for state CarbonDetected */
-		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected();
-		stateVector[3] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED;
-		stateConfVectorPosition = 3;
-	}
-	
-	/* 'default' enter sequence for state SmokeDetected */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected_default() {
-		/* 'default' enter sequence for state SmokeDetected */
-		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected();
-		stateVector[3] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED;
-		stateConfVectorPosition = 3;
-	}
-	
-	/* 'default' enter sequence for state HeatDetected */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected_default() {
-		/* 'default' enter sequence for state HeatDetected */
-		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected();
-		stateVector[3] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED;
-		stateConfVectorPosition = 3;
-	}
-	
-	/* Default enter sequence for final state */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final__default() {
-		/* Default enter sequence for final state */
-		stateVector[3] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_;
-		stateConfVectorPosition = 3;
-	}
-	
 	/* 'default' enter sequence for state off */
 	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off_default() {
 		/* 'default' enter sequence for state off */
 		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_off();
-		stateVector[3] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF;
+		stateVector[2] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* 'default' enter sequence for state on */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_default() {
+		/* 'default' enter sequence for state on */
+		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on();
+		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_default();
+		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_default();
+		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_default();
+	}
+	
+	/* 'default' enter sequence for state inactive */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive_default() {
+		/* 'default' enter sequence for state inactive */
+		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive();
+		stateVector[2] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_INACTIVE;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* 'default' enter sequence for state active */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active_default() {
+		/* 'default' enter sequence for state active */
+		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active();
+		stateVector[2] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_ACTIVE;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* 'default' enter sequence for state inactive */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive_default() {
+		/* 'default' enter sequence for state inactive */
+		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive();
+		stateVector[3] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_INACTIVE;
 		stateConfVectorPosition = 3;
+	}
+	
+	/* 'default' enter sequence for state active */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active_default() {
+		/* 'default' enter sequence for state active */
+		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active();
+		stateVector[3] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_ACTIVE;
+		stateConfVectorPosition = 3;
+	}
+	
+	/* 'default' enter sequence for state inactive */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive_default() {
+		/* 'default' enter sequence for state inactive */
+		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive();
+		stateVector[4] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_INACTIVE;
+		stateConfVectorPosition = 4;
+	}
+	
+	/* 'default' enter sequence for state active */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active_default() {
+		/* 'default' enter sequence for state active */
+		entryAction__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active();
+		stateVector[4] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE;
+		stateConfVectorPosition = 4;
 	}
 	
 	/* 'default' enter sequence for state <Initialize_Network_Component> */
@@ -1294,16 +1359,16 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private void enterSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates__default() {
 		/* 'default' enter sequence for state <Network_Connection_Updates> */
 		entryAction__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_();
-		stateVector[4] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_;
+		stateConfVectorPosition = 5;
 	}
 	
 	/* 'default' enter sequence for state off */
 	private void enterSequence__SmartFiresystem__SmartFireSystem_NetworkComponent_off_default() {
 		/* 'default' enter sequence for state off */
 		entryAction__SmartFiresystem__SmartFireSystem_NetworkComponent_off();
-		stateVector[4] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT_OFF;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT_OFF;
+		stateConfVectorPosition = 5;
 	}
 	
 	/* 'default' enter sequence for state <Initialize_Power_Component> */
@@ -1316,37 +1381,15 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private void enterSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates__default() {
 		/* 'default' enter sequence for state <Power_Consumption_Updates> */
 		entryAction__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_();
-		stateVector[5] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_;
-		stateConfVectorPosition = 5;
+		stateVector[6] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_;
+		stateConfVectorPosition = 6;
 	}
 	
 	/* 'default' enter sequence for state off */
 	private void enterSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off_default() {
 		/* 'default' enter sequence for state off */
 		entryAction__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off();
-		stateVector[5] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF;
-		stateConfVectorPosition = 5;
-	}
-	
-	/* 'default' enter sequence for state <Initialize_DeviceTemp_Component> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component__default() {
-		/* 'default' enter sequence for state <Initialize_DeviceTemp_Component> */
-		enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component__default();
-	}
-	
-	/* 'default' enter sequence for state <Temperature_Updates> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates__default() {
-		/* 'default' enter sequence for state <Temperature_Updates> */
-		entryAction__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_();
-		stateVector[6] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_;
-		stateConfVectorPosition = 6;
-	}
-	
-	/* 'default' enter sequence for state off */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off_default() {
-		/* 'default' enter sequence for state off */
-		entryAction__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off();
-		stateVector[6] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT_OFF;
+		stateVector[6] = State._SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT_OFF;
 		stateConfVectorPosition = 6;
 	}
 	
@@ -1368,34 +1411,28 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		react__SmartFiresystem__SmartFireSystem_ActuatorComponent__entry_Default();
 	}
 	
-	/* 'default' enter sequence for region ControllerComponent */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_default() {
-		/* 'default' enter sequence for region ControllerComponent */
-		react__SmartFiresystem__SmartFireSystem_ControllerComponent__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region <Controller_Receiving_and_Sending_Updates> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates__default() {
-		/* 'default' enter sequence for region <Controller_Receiving_and_Sending_Updates> */
-		react__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___entry_Default();
-	}
-	
 	/* 'default' enter sequence for region SensorComponent */
 	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_default() {
 		/* 'default' enter sequence for region SensorComponent */
 		react__SmartFiresystem__SmartFireSystem_SensorComponent__entry_Default();
 	}
 	
-	/* 'default' enter sequence for region <Sensor_Monitoring> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring__default() {
-		/* 'default' enter sequence for region <Sensor_Monitoring> */
-		react__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___entry_Default();
+	/* 'default' enter sequence for region FlameSensor */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_default() {
+		/* 'default' enter sequence for region FlameSensor */
+		react__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor__entry_Default();
 	}
 	
-	/* 'default' enter sequence for region <Sensor_Detected_Activity> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__default() {
-		/* 'default' enter sequence for region <Sensor_Detected_Activity> */
-		react__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___entry_Default();
+	/* 'default' enter sequence for region SmokeSensor */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_default() {
+		/* 'default' enter sequence for region SmokeSensor */
+		react__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor__entry_Default();
+	}
+	
+	/* 'default' enter sequence for region HeatSensor */
+	private void enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_default() {
+		/* 'default' enter sequence for region HeatSensor */
+		react__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor__entry_Default();
 	}
 	
 	/* 'default' enter sequence for region NetworkComponent */
@@ -1422,31 +1459,19 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		react__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___entry_Default();
 	}
 	
-	/* 'default' enter sequence for region DeviceTemperatureComponent */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_default() {
-		/* 'default' enter sequence for region DeviceTemperatureComponent */
-		react__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__entry_Default();
-	}
-	
-	/* 'default' enter sequence for region <Receiving_Updates_from_DeviceTemp_Component> */
-	private void enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component__default() {
-		/* 'default' enter sequence for region <Receiving_Updates_from_DeviceTemp_Component> */
-		react__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___entry_Default();
-	}
-	
-	/* Default exit sequence for state off */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_off() {
-		/* Default exit sequence for state off */
+	/* Default exit sequence for state inactive */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive() {
+		/* Default exit sequence for state inactive */
 		stateVector[0] = State.$NULLSTATE$;
 		stateConfVectorPosition = 0;
 	}
 	
-	/* Default exit sequence for state on */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_on() {
-		/* Default exit sequence for state on */
+	/* Default exit sequence for state active */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_active() {
+		/* Default exit sequence for state active */
 		stateVector[0] = State.$NULLSTATE$;
 		stateConfVectorPosition = 0;
-		exitAction__SmartFiresystem__SmartFireSystem_DeviceStatus_on();
+		exitAction__SmartFiresystem__SmartFireSystem_DeviceStatus_active();
 	}
 	
 	/* Default exit sequence for state <Actuator_OnStandby> */
@@ -1454,7 +1479,6 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		/* Default exit sequence for state <Actuator_OnStandby> */
 		stateVector[1] = State.$NULLSTATE$;
 		stateConfVectorPosition = 1;
-		exitAction__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby_();
 	}
 	
 	/* Default exit sequence for state <Device_Actuated> */
@@ -1462,7 +1486,6 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		/* Default exit sequence for state <Device_Actuated> */
 		stateVector[1] = State.$NULLSTATE$;
 		stateConfVectorPosition = 1;
-		exitAction__SmartFiresystem__SmartFireSystem_ActuatorComponent__Device_Actuated_();
 	}
 	
 	/* Default exit sequence for state <Actuator_off> */
@@ -1473,74 +1496,61 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		exitAction__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_off_();
 	}
 	
-	/* Default exit sequence for state <Controller_Component_isON> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON_() {
-		/* Default exit sequence for state <Controller_Component_isON> */
-		exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates_();
-	}
-	
-	/* Default exit sequence for state <Controller_Component> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_() {
-		/* Default exit sequence for state <Controller_Component> */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
-		exitAction__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_();
-	}
-	
-	/* Default exit sequence for state off */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_off() {
-		/* Default exit sequence for state off */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
-		exitAction__SmartFiresystem__SmartFireSystem_ControllerComponent_off();
-	}
-	
-	/* Default exit sequence for state <Sensor_Component_isON> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON_() {
-		/* Default exit sequence for state <Sensor_Component_isON> */
-		exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring_();
-	}
-	
-	/* Default exit sequence for state <Sensor_Component> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_() {
-		/* Default exit sequence for state <Sensor_Component> */
-		exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity_();
-		exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-	}
-	
-	/* Default exit sequence for state CarbonDetected */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected() {
-		/* Default exit sequence for state CarbonDetected */
-		stateVector[3] = State.$NULLSTATE$;
-		stateConfVectorPosition = 3;
-	}
-	
-	/* Default exit sequence for state SmokeDetected */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected() {
-		/* Default exit sequence for state SmokeDetected */
-		stateVector[3] = State.$NULLSTATE$;
-		stateConfVectorPosition = 3;
-	}
-	
-	/* Default exit sequence for state HeatDetected */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected() {
-		/* Default exit sequence for state HeatDetected */
-		stateVector[3] = State.$NULLSTATE$;
-		stateConfVectorPosition = 3;
-	}
-	
-	/* Default exit sequence for final state. */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final_() {
-		/* Default exit sequence for final state. */
-		stateVector[3] = State.$NULLSTATE$;
-		stateConfVectorPosition = 3;
-	}
-	
 	/* Default exit sequence for state off */
 	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off() {
 		/* Default exit sequence for state off */
+		stateVector[2] = State.$NULLSTATE$;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* Default exit sequence for state on */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on() {
+		/* Default exit sequence for state on */
+		exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor();
+		exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor();
+		exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor();
+	}
+	
+	/* Default exit sequence for state inactive */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive() {
+		/* Default exit sequence for state inactive */
+		stateVector[2] = State.$NULLSTATE$;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* Default exit sequence for state active */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active() {
+		/* Default exit sequence for state active */
+		stateVector[2] = State.$NULLSTATE$;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* Default exit sequence for state inactive */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive() {
+		/* Default exit sequence for state inactive */
 		stateVector[3] = State.$NULLSTATE$;
 		stateConfVectorPosition = 3;
+	}
+	
+	/* Default exit sequence for state active */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active() {
+		/* Default exit sequence for state active */
+		stateVector[3] = State.$NULLSTATE$;
+		stateConfVectorPosition = 3;
+	}
+	
+	/* Default exit sequence for state inactive */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive() {
+		/* Default exit sequence for state inactive */
+		stateVector[4] = State.$NULLSTATE$;
+		stateConfVectorPosition = 4;
+	}
+	
+	/* Default exit sequence for state active */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active() {
+		/* Default exit sequence for state active */
+		stateVector[4] = State.$NULLSTATE$;
+		stateConfVectorPosition = 4;
 	}
 	
 	/* Default exit sequence for state <Initialize_Network_Component> */
@@ -1552,16 +1562,16 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	/* Default exit sequence for state <Network_Connection_Updates> */
 	private void exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_() {
 		/* Default exit sequence for state <Network_Connection_Updates> */
-		stateVector[4] = State.$NULLSTATE$;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State.$NULLSTATE$;
+		stateConfVectorPosition = 5;
 		exitAction__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_();
 	}
 	
 	/* Default exit sequence for state off */
 	private void exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent_off() {
 		/* Default exit sequence for state off */
-		stateVector[4] = State.$NULLSTATE$;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State.$NULLSTATE$;
+		stateConfVectorPosition = 5;
 		exitAction__SmartFiresystem__SmartFireSystem_NetworkComponent_off();
 	}
 	
@@ -1574,49 +1584,28 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	/* Default exit sequence for state <Power_Consumption_Updates> */
 	private void exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_() {
 		/* Default exit sequence for state <Power_Consumption_Updates> */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
+		stateVector[6] = State.$NULLSTATE$;
+		stateConfVectorPosition = 6;
 		exitAction__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_();
 	}
 	
 	/* Default exit sequence for state off */
 	private void exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off() {
 		/* Default exit sequence for state off */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
+		stateVector[6] = State.$NULLSTATE$;
+		stateConfVectorPosition = 6;
 		exitAction__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off();
-	}
-	
-	/* Default exit sequence for state <Initialize_DeviceTemp_Component> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component_() {
-		/* Default exit sequence for state <Initialize_DeviceTemp_Component> */
-		exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component_();
-	}
-	
-	/* Default exit sequence for state <Temperature_Updates> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_() {
-		/* Default exit sequence for state <Temperature_Updates> */
-		stateVector[6] = State.$NULLSTATE$;
-		stateConfVectorPosition = 6;
-		exitAction__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_();
-	}
-	
-	/* Default exit sequence for state off */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off() {
-		/* Default exit sequence for state off */
-		stateVector[6] = State.$NULLSTATE$;
-		stateConfVectorPosition = 6;
 	}
 	
 	/* Default exit sequence for region <SmartFiresystem> */
 	private void exitSequence__SmartFiresystem_() {
 		/* Default exit sequence for region <SmartFiresystem> */
 		switch (stateVector[0]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_OFF:
-			exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_off();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_INACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive();
 			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ON:
-			exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_on();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICESTATUS_ACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_active();
 			break;
 		default:
 			break;
@@ -1635,39 +1624,39 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 			break;
 		}
 		switch (stateVector[2]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_:
-			exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off();
 			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT_OFF:
-			exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_off();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_INACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive();
+			break;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_ACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active();
 			break;
 		default:
 			break;
 		}
 		switch (stateVector[3]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_INACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive();
 			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final_();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_OFF:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_ACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active();
 			break;
 		default:
 			break;
 		}
 		switch (stateVector[4]) {
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_INACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive();
+			break;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active();
+			break;
+		default:
+			break;
+		}
+		switch (stateVector[5]) {
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_:
 			exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_();
 			break;
@@ -1677,7 +1666,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		default:
 			break;
 		}
-		switch (stateVector[5]) {
+		switch (stateVector[6]) {
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_:
 			exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_();
 			break;
@@ -1687,70 +1676,47 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		default:
 			break;
 		}
-		switch (stateVector[6]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_:
-			exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT_OFF:
-			exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off();
-			break;
-		default:
-			break;
-		}
 	}
 	
-	/* Default exit sequence for region <Controller_Receiving_and_Sending_Updates> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates_() {
-		/* Default exit sequence for region <Controller_Receiving_and_Sending_Updates> */
+	/* Default exit sequence for region FlameSensor */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor() {
+		/* Default exit sequence for region FlameSensor */
 		switch (stateVector[2]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_CONTROLLERCOMPONENT__CONTROLLER_COMPONENT_ISON___CONTROLLER_RECEIVING_AND_SENDING_UPDATES___CONTROLLER_COMPONENT_:
-			exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_INACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive();
+			break;
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_FLAMESENSOR_ACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active();
 			break;
 		default:
 			break;
 		}
 	}
 	
-	/* Default exit sequence for region <Sensor_Monitoring> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring_() {
-		/* Default exit sequence for region <Sensor_Monitoring> */
+	/* Default exit sequence for region SmokeSensor */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor() {
+		/* Default exit sequence for region SmokeSensor */
 		switch (stateVector[3]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_INACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive();
 			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final_();
-			exitAction__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_SMOKESENSOR_ACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active();
 			break;
 		default:
 			break;
 		}
 	}
 	
-	/* Default exit sequence for region <Sensor_Detected_Activity> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity_() {
-		/* Default exit sequence for region <Sensor_Detected_Activity> */
-		switch (stateVector[3]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__CARBONDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected();
+	/* Default exit sequence for region HeatSensor */
+	private void exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor() {
+		/* Default exit sequence for region HeatSensor */
+		switch (stateVector[4]) {
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_INACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive();
 			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__SMOKEDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY__HEATDETECTED:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected();
-			break;
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT__SENSOR_COMPONENT_ISON___SENSOR_MONITORING___SENSOR_COMPONENT___SENSOR_DETECTED_ACTIVITY___FINAL_:
-			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final_();
+		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_SENSORCOMPONENT_ON_HEATSENSOR_ACTIVE:
+			exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active();
 			break;
 		default:
 			break;
@@ -1760,7 +1726,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	/* Default exit sequence for region <Receiving_Network_Connection_Updates> */
 	private void exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates_() {
 		/* Default exit sequence for region <Receiving_Network_Connection_Updates> */
-		switch (stateVector[4]) {
+		switch (stateVector[5]) {
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_NETWORKCOMPONENT__INITIALIZE_NETWORK_COMPONENT___RECEIVING_NETWORK_CONNECTION_UPDATES___NETWORK_CONNECTION_UPDATES_:
 			exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_();
 			break;
@@ -1772,7 +1738,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	/* Default exit sequence for region <Receiving_Updates_From_Power_Component> */
 	private void exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component_() {
 		/* Default exit sequence for region <Receiving_Updates_From_Power_Component> */
-		switch (stateVector[5]) {
+		switch (stateVector[6]) {
 		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_POWERCALCULATORCOMPONENT__INITIALIZE_POWER_COMPONENT___RECEIVING_UPDATES_FROM_POWER_COMPONENT___POWER_CONSUMPTION_UPDATES_:
 			exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_();
 			break;
@@ -1781,41 +1747,11 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		}
 	}
 	
-	/* Default exit sequence for region <Receiving_Updates_from_DeviceTemp_Component> */
-	private void exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component_() {
-		/* Default exit sequence for region <Receiving_Updates_from_DeviceTemp_Component> */
-		switch (stateVector[6]) {
-		case _SMARTFIRESYSTEM__SMARTFIRESYSTEM_DEVICETEMPERATURECOMPONENT__INITIALIZE_DEVICETEMP_COMPONENT___RECEIVING_UPDATES_FROM_DEVICETEMP_COMPONENT___TEMPERATURE_UPDATES_:
-			exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_();
-			break;
-		default:
-			break;
-		}
-	}
-	
-	/* The reactions of state null. */
-	private void react__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___choice_0() {
-		/* The reactions of state null. */
-		if (carbonSensorOutput.getActivity()) {
-			enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected_default();
-		} else {
-			if (smokeSensorOutput.getActivity()) {
-				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected_default();
-			} else {
-				if (heatSensorOutput.getActivity()) {
-					enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected_default();
-				} else {
-					enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final__default();
-				}
-			}
-		}
-	}
-	
 	/* Default react sequence for initial entry  */
 	private void react__SmartFiresystem__SmartFireSystem_DeviceStatus__entry_Default() {
 		/* Default react sequence for initial entry  */
 		getFireAlarm().enter();
-		enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_off_default();
+		enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive_default();
 	}
 	
 	/* Default react sequence for initial entry  */
@@ -1826,37 +1762,30 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	}
 	
 	/* Default react sequence for initial entry  */
-	private void react__SmartFiresystem__SmartFireSystem_ControllerComponent__entry_Default() {
-		/* Default react sequence for initial entry  */
-		getController().enter();
-		enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_off_default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component__default();
-	}
-	
-	/* Default react sequence for initial entry  */
 	private void react__SmartFiresystem__SmartFireSystem_SensorComponent__entry_Default() {
 		/* Default react sequence for initial entry  */
-		getCarbonSensor().enter();
+		getFlameSensor().enter();
 		getSmokeSensor().enter();
 		getHeatSensor().enter();
 		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off_default();
 	}
 	
 	/* Default react sequence for initial entry  */
-	private void react__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___entry_Default() {
+	private void react__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor__entry_Default() {
 		/* Default react sequence for initial entry  */
-		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__default();
+		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive_default();
 	}
 	
 	/* Default react sequence for initial entry  */
-	private void react__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___entry_Default() {
+	private void react__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor__entry_Default() {
 		/* Default react sequence for initial entry  */
-		react__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___choice_0();
+		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive_default();
+	}
+	
+	/* Default react sequence for initial entry  */
+	private void react__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor__entry_Default() {
+		/* Default react sequence for initial entry  */
+		enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive_default();
 	}
 	
 	/* Default react sequence for initial entry  */
@@ -1886,19 +1815,6 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	}
 	
 	/* Default react sequence for initial entry  */
-	private void react__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__entry_Default() {
-		/* Default react sequence for initial entry  */
-		getTemp().enter();
-		enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off_default();
-	}
-	
-	/* Default react sequence for initial entry  */
-	private void react__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___entry_Default() {
-		/* Default react sequence for initial entry  */
-		enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates__default();
-	}
-	
-	/* Default react sequence for initial entry  */
 	private void react__SmartFiresystem___entry_Default() {
 		/* Default react sequence for initial entry  */
 		enterSequence__SmartFiresystem__SmartFireSystem_default();
@@ -1917,34 +1833,28 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		return transitioned_after;
 	}
 	
-	private long _SmartFiresystem__SmartFireSystem_DeviceStatus_off_react(long transitioned_before) {
-		/* The reactions of state off. */
+	private long _SmartFiresystem__SmartFireSystem_DeviceStatus_inactive_react(long transitioned_before) {
+		/* The reactions of state inactive. */
 		long transitioned_after = transitioned_before;
 		if (transitioned_after<0l) {
-			if (system.on) {
-				exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_off();
-				enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_on_default();
+			if (system.sensor_active) {
+				exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive();
+				enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_active_default();
 				transitioned_after = 0l;
 			}
 		}
 		return transitioned_after;
 	}
 	
-	private long _SmartFiresystem__SmartFireSystem_DeviceStatus_on_react(long transitioned_before) {
-		/* The reactions of state on. */
+	private long _SmartFiresystem__SmartFireSystem_DeviceStatus_active_react(long transitioned_before) {
+		/* The reactions of state active. */
 		long transitioned_after = transitioned_before;
 		if (transitioned_after<0l) {
-			if (system.off) {
-				exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_on();
-				enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_off_default();
+			if (((timeEvents[0]) && (((!(flameSensorOutput.getActivity()) && !(smokeSensorOutput.getActivity())) && !(heatSensorOutput.getActivity()))))) {
+				exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_active();
+				timeEvents[0] = false;
+				enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_inactive_default();
 				transitioned_after = 0l;
-			} else {
-				if (timeEvents[0]) {
-					exitSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_on();
-					timeEvents[0] = false;
-					enterSequence__SmartFiresystem__SmartFireSystem_DeviceStatus_on_default();
-					transitioned_after = 0l;
-				}
 			}
 		}
 		return transitioned_after;
@@ -1954,7 +1864,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		/* The reactions of state <Actuator_OnStandby>. */
 		long transitioned_after = transitioned_before;
 		if (transitioned_after<1l) {
-			if (getActuator().getIsTriggered()) {
+			if (fireAlarm_Alarm_on) {
 				exitSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby_();
 				enterSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Device_Actuated__default();
 				transitioned_after = 1l;
@@ -1963,13 +1873,6 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 					exitSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby_();
 					enterSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_off__default();
 					transitioned_after = 1l;
-				} else {
-					if (timeEvents[1]) {
-						exitSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby_();
-						timeEvents[1] = false;
-						enterSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby__default();
-						transitioned_after = 1l;
-					}
 				}
 			}
 		}
@@ -1980,7 +1883,7 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		/* The reactions of state <Device_Actuated>. */
 		long transitioned_after = transitioned_before;
 		if (transitioned_after<1l) {
-			if (!(getActuator().getIsTriggered())) {
+			if (fireAlarm_Alarm_off) {
 				exitSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Device_Actuated_();
 				enterSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_OnStandby__default();
 				transitioned_after = 1l;
@@ -1990,16 +1893,6 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 					enterSequence__SmartFiresystem__SmartFireSystem_ActuatorComponent__Actuator_off__default();
 					transitioned_after = 1l;
 				}
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			if (timeEvents[2]) {
-				fireAlarm.sensors().setTriggerSignal_received(actuator.getIsTriggered());
-				fireAlarm.sensors().setSmoke_presence(smokeSensorOutput.activity);
-				fireAlarm.sensors().setCarbon_presence(carbonSensorOutput.activity);
-				fireAlarm.sensors().setHeat_presence(heatSensorOutput.activity);
 			}
 		}
 		return transitioned_after;
@@ -2018,139 +1911,118 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 		return transitioned_after;
 	}
 	
-	private long _SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON__react(long transitioned_before) {
-		/* The reactions of state <Controller_Component_isON>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if (system.off) {
-				exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON_();
-				enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_off_default();
-				transitioned_after = 2l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component__react(long transitioned_before) {
-		/* The reactions of state <Controller_Component>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if (timeEvents[3]) {
-				exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component_();
-				timeEvents[3] = false;
-				enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON___Controller_Receiving_and_Sending_Updates___Controller_Component__default();
-				_SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON__react(2l);
-				transitioned_after = 2l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_ControllerComponent_off_react(long transitioned_before) {
-		/* The reactions of state off. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
-			if (system.on) {
-				exitSequence__SmartFiresystem__SmartFireSystem_ControllerComponent_off();
-				enterSequence__SmartFiresystem__SmartFireSystem_ControllerComponent__Controller_Component_isON__default();
-				transitioned_after = 2l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON__react(long transitioned_before) {
-		/* The reactions of state <Sensor_Component_isON>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<3l) {
-			if (system.off) {
-				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON_();
-				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off_default();
-				transitioned_after = 3l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__react(long transitioned_before) {
-		/* The reactions of state <Sensor_Component>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<3l) {
-			if (((timeEvents[4]) && (!(sensorOutput.getActivity())))) {
-				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-				timeEvents[4] = false;
-				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__default();
-				_SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON__react(3l);
-				transitioned_after = 3l;
-			} else {
-				if (sensorInput.reset) {
-					exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component_();
-					enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__default();
-					_SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON__react(3l);
-					transitioned_after = 3l;
-				}
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__CarbonDetected_react(long transitioned_before) {
-		/* The reactions of state CarbonDetected. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__SmokeDetected_react(long transitioned_before) {
-		/* The reactions of state SmokeDetected. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity__HeatDetected_react(long transitioned_before) {
-		/* The reactions of state HeatDetected. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component___Sensor_Detected_Activity___final__react(long transitioned_before) {
-		/* The reactions of state null. */
-		return _SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON___Sensor_Monitoring___Sensor_Component__react(transitioned_before);
-	}
-	
 	private long _SmartFiresystem__SmartFireSystem_SensorComponent_off_react(long transitioned_before) {
 		/* The reactions of state off. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<3l) {
+		if (transitioned_after<2l) {
 			if (system.on) {
 				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off();
-				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent__Sensor_Component_isON__default();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_default();
+				transitioned_after = 2l;
+			}
+		}
+		return transitioned_after;
+	}
+	
+	private long _SmartFiresystem__SmartFireSystem_SensorComponent_on_react(long transitioned_before) {
+		/* The reactions of state on. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<2l) {
+			if (system.off) {
+				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_off_default();
+				transitioned_after = 4l;
+			}
+		}
+		return transitioned_after;
+	}
+	
+	private long _SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive_react(long transitioned_before) {
+		/* The reactions of state inactive. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<2l) {
+			if (flameSensor_overThreshold) {
+				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active_default();
+				transitioned_after = 2l;
+			}
+		}
+		return transitioned_after;
+	}
+	
+	private long _SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active_react(long transitioned_before) {
+		/* The reactions of state active. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<2l) {
+			if (flameSensor_underThreshold) {
+				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_active();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_FlameSensor_inactive_default();
+				transitioned_after = 2l;
+			}
+		}
+		return transitioned_after;
+	}
+	
+	private long _SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive_react(long transitioned_before) {
+		/* The reactions of state inactive. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<3l) {
+			if (smokeSensor_overThreshold) {
+				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active_default();
 				transitioned_after = 3l;
 			}
+		}
+		return transitioned_after;
+	}
+	
+	private long _SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active_react(long transitioned_before) {
+		/* The reactions of state active. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<3l) {
+			if (smokeSensor_underThreshold) {
+				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_active();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_SmokeSensor_inactive_default();
+				transitioned_after = 3l;
+			}
+		}
+		return transitioned_after;
+	}
+	
+	private long _SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive_react(long transitioned_before) {
+		/* The reactions of state inactive. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<4l) {
+			if (heatSensor_overThreshold) {
+				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active_default();
+				_SmartFiresystem__SmartFireSystem_SensorComponent_on_react(2l);
+				transitioned_after = 4l;
+			}
+		}
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = _SmartFiresystem__SmartFireSystem_SensorComponent_on_react(transitioned_before);
+		}
+		return transitioned_after;
+	}
+	
+	private long _SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active_react(long transitioned_before) {
+		/* The reactions of state active. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<4l) {
+			if (heatSensor_underThreshold) {
+				exitSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_active();
+				enterSequence__SmartFiresystem__SmartFireSystem_SensorComponent_on_HeatSensor_inactive_default();
+				_SmartFiresystem__SmartFireSystem_SensorComponent_on_react(2l);
+				transitioned_after = 4l;
+			}
+		}
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = _SmartFiresystem__SmartFireSystem_SensorComponent_on_react(transitioned_before);
 		}
 		return transitioned_after;
 	}
@@ -2158,11 +2030,11 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private long _SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component__react(long transitioned_before) {
 		/* The reactions of state <Initialize_Network_Component>. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<4l) {
+		if (transitioned_after<5l) {
 			if ((system.off || system.disconnect_network)) {
 				exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component_();
 				enterSequence__SmartFiresystem__SmartFireSystem_NetworkComponent_off_default();
-				transitioned_after = 4l;
+				transitioned_after = 5l;
 			}
 		}
 		return transitioned_after;
@@ -2171,13 +2043,13 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private long _SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates__react(long transitioned_before) {
 		/* The reactions of state <Network_Connection_Updates>. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<4l) {
-			if (timeEvents[5]) {
+		if (transitioned_after<5l) {
+			if (timeEvents[1]) {
 				exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates_();
-				timeEvents[5] = false;
+				timeEvents[1] = false;
 				enterSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component___Receiving_Network_Connection_Updates___Network_Connection_Updates__default();
-				_SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component__react(4l);
-				transitioned_after = 4l;
+				_SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component__react(5l);
+				transitioned_after = 5l;
 			}
 		}
 		/* If no transition was taken */
@@ -2191,11 +2063,11 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private long _SmartFiresystem__SmartFireSystem_NetworkComponent_off_react(long transitioned_before) {
 		/* The reactions of state off. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<4l) {
+		if (transitioned_after<5l) {
 			if ((system.on || system.connect_network)) {
 				exitSequence__SmartFiresystem__SmartFireSystem_NetworkComponent_off();
 				enterSequence__SmartFiresystem__SmartFireSystem_NetworkComponent__Initialize_Network_Component__default();
-				transitioned_after = 4l;
+				transitioned_after = 5l;
 			}
 		}
 		return transitioned_after;
@@ -2204,12 +2076,18 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private long _SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component__react(long transitioned_before) {
 		/* The reactions of state <Initialize_Power_Component>. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
+		if (transitioned_after<6l) {
 			if (system.off) {
 				exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component_();
 				enterSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off_default();
-				transitioned_after = 5l;
+				_SmartFiresystem__SmartFireSystem_react(0l);
+				transitioned_after = 6l;
 			}
+		}
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = _SmartFiresystem__SmartFireSystem_react(transitioned_before);
 		}
 		return transitioned_after;
 	}
@@ -2217,13 +2095,13 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private long _SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates__react(long transitioned_before) {
 		/* The reactions of state <Power_Consumption_Updates>. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
-			if (timeEvents[6]) {
+		if (transitioned_after<6l) {
+			if (timeEvents[2]) {
 				exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates_();
-				timeEvents[6] = false;
+				timeEvents[2] = false;
 				enterSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component___Receiving_Updates_From_Power_Component___Power_Consumption_Updates__default();
-				_SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component__react(5l);
-				transitioned_after = 5l;
+				_SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component__react(6l);
+				transitioned_after = 6l;
 			}
 		}
 		/* If no transition was taken */
@@ -2237,62 +2115,10 @@ public class SmartFireSystem implements ITimed, IEventDriven {
 	private long _SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off_react(long transitioned_before) {
 		/* The reactions of state off. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
+		if (transitioned_after<6l) {
 			if (system.on) {
 				exitSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent_off();
 				enterSequence__SmartFiresystem__SmartFireSystem_PowerCalculatorComponent__Initialize_Power_Component__default();
-				transitioned_after = 5l;
-			}
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component__react(long transitioned_before) {
-		/* The reactions of state <Initialize_DeviceTemp_Component>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<6l) {
-			if (system.off) {
-				exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component_();
-				enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off_default();
-				_SmartFiresystem__SmartFireSystem_react(0l);
-				transitioned_after = 6l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _SmartFiresystem__SmartFireSystem_react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates__react(long transitioned_before) {
-		/* The reactions of state <Temperature_Updates>. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<6l) {
-			if (timeEvents[7]) {
-				exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates_();
-				timeEvents[7] = false;
-				enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component___Receiving_Updates_from_DeviceTemp_Component___Temperature_Updates__default();
-				_SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component__react(6l);
-				transitioned_after = 6l;
-			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = _SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component__react(transitioned_before);
-		}
-		return transitioned_after;
-	}
-	
-	private long _SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off_react(long transitioned_before) {
-		/* The reactions of state off. */
-		long transitioned_after = transitioned_before;
-		if (transitioned_after<6l) {
-			if (system.on) {
-				exitSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent_off();
-				enterSequence__SmartFiresystem__SmartFireSystem_DeviceTemperatureComponent__Initialize_DeviceTemp_Component__default();
 				_SmartFiresystem__SmartFireSystem_react(0l);
 				transitioned_after = 6l;
 			}

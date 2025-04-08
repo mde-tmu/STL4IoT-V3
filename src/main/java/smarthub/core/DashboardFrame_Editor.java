@@ -23,13 +23,13 @@ public class DashboardFrame_Editor extends JFrame{
     public static JFrame frame;
     public static JPanel mainPanel, notifsPanel;
 	public static JPanel testerPanel;
-	public static JPanel smartFirePanel;
+	public static JPanel smartFirePanel, smartFirePanel_button;
 	public static JPanel smartTVPanel;
 	public static JPanel smartLightPanel;
 	public static JPanel smartMicrowavePanel;
 	public static JPanel smartGarageDoorPanel;
     
-    public static JButton smartFire_switch,
+    public static JButton smartFire_switch, smartFire_snooze,
     				smartTV_switch, smartTV_use, smartTV_inputSource,
     				smartLight_switch, smartLight_use, smartLight_brightness,
     				smartMicrowave_switch, smartMicrowave_use, smartMicrowave_addTimer, smartMicrowave_resetTimer, smartMicrowave_startTimer, smartMicrowave_doorStatus,
@@ -38,7 +38,7 @@ public class DashboardFrame_Editor extends JFrame{
     				testButton1, testButton2, testButton3, testButton4, testButton5, testButton6, testButton7, testButton8,
     				exitButton, saveReportButton;
     
-	public static JTextPane smartFire_message, smartFire_systemStatus, smartFire_carbonSensor, smartFire_smokeSensor, smartFire_heatSensor,
+	public static JTextPane smartFire_message, smartFire_systemStatus, smartFire_flameSensor, smartFire_smokeSensor, smartFire_heatSensor,
 						smartTV_message, smartTV_heat,
 						smartLight_message, smartLight_heat,
 						smartMicrowave_message, smartMicrowave_heat,
@@ -163,7 +163,8 @@ public class DashboardFrame_Editor extends JFrame{
         mainPanel.setBackground(Color.WHITE);
         
        
-        /*4*/contentPane.add(DataPlotter.createBarGraph());
+//        /*4*/contentPane.add(DataPlotter.createBarGraph());
+        contentPane.add(createFireAlarmPanel());
 
         frame.setContentPane(contentPane);
         frame.pack();
@@ -272,25 +273,32 @@ public class DashboardFrame_Editor extends JFrame{
     //Smart Fire Panel
     public Component createFireAlarmPanel() {
         // Smart Fire
-        smartFirePanel = new JPanel(new GridLayout(0, 1, hGap, vGap));
-        
-        smartFirePanel.setOpaque(true);
-        smartFirePanel.setBackground(Color.GRAY.brighter());
-        
-        smartFire_switch = new JButton();
-        smartFire_message = new JTextPane();
-        smartFire_systemStatus = new JTextPane();
-        smartFire_smokeSensor = new JTextPane();
-        smartFire_carbonSensor = new JTextPane();
-        smartFire_heatSensor = new JTextPane();
-        
+        smartFirePanel = new JPanel(new GridLayout(2, 1, hGap, vGap));
+        smartFirePanel_button = new JPanel(new GridLayout(1, 1, hGap, vGap));
+        smartFirePanel_button.setBorder(BorderFactory.createEmptyBorder(hGap, vGap, hGap, vGap));
 
-        smartFirePanel.add(smartFire_switch);
-        smartFirePanel.add(smartFire_message);
-        smartFirePanel.add(smartFire_systemStatus);
-        smartFirePanel.add(smartFire_smokeSensor);
-        smartFirePanel.add(smartFire_carbonSensor);
-        smartFirePanel.add(smartFire_heatSensor);
+        smartFirePanel_button.setOpaque(true);
+        smartFirePanel_button.setBackground(Color.WHITE);
+//        smartFirePanel.setOpaque(true);
+//        smartFirePanel.setBackground(Color.GRAY.brighter());
+//
+        smartFire_switch = new JButton();
+        smartFire_snooze = new JButton();
+//        smartFire_message = new JTextPane();
+//        smartFire_systemStatus = new JTextPane();
+//        smartFire_smokeSensor = new JTextPane();
+//        smartFire_flameSensor = new JTextPane();
+//        smartFire_heatSensor = new JTextPane();
+//
+//
+        smartFirePanel_button.add(smartFire_switch);
+        smartFirePanel_button.add(smartFire_snooze);
+        smartFirePanel.add(smartFirePanel_button);
+        smartFirePanel.add(DataPlotter.createBarGraph());
+//        smartFirePanel.add(smartFire_systemStatus);
+//        smartFirePanel.add(smartFire_smokeSensor);
+//        smartFirePanel.add(smartFire_flameSensor);
+//        smartFirePanel.add(smartFire_heatSensor);
         
         return smartFirePanel;
     }
@@ -407,7 +415,7 @@ public class DashboardFrame_Editor extends JFrame{
         testButton3 = new JButton();
         testButton4 = new JButton();
         testButton1.setText("Test Smoke Sensor");
-        testButton2.setText("Test Carbon Sensor");
+        testButton2.setText("Test Flame Sensor");
         testButton3.setText("Test Heat Sensor");
         testButton4.setText("Sound Fire Alarm");
         //ADD TO PANEL

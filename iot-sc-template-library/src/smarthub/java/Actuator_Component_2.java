@@ -3,10 +3,12 @@ package smarthub.java;
 
 import com.yakindu.core.IEventDriven;
 import com.yakindu.core.IStatemachine;
+import com.yakindu.core.ITimed;
+import com.yakindu.core.ITimerService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Actuator_Component_2 implements IEventDriven {
+public class Actuator_Component_2 implements ITimed, IEventDriven {
 	public static class Power {
 		private Actuator_Component_2 parent;
 		
@@ -95,6 +97,10 @@ public class Actuator_Component_2 implements IEventDriven {
 	
 	private final State[] stateVector = new State[1];
 	
+	private ITimerService timerService;
+	
+	private final boolean[] timeEvents = new boolean[2];
+	
 	private BlockingQueue<Runnable> inEventQueue = new LinkedBlockingQueue<Runnable>();
 	private boolean isExecuting;
 	
@@ -130,6 +136,9 @@ public class Actuator_Component_2 implements IEventDriven {
 	
 	public synchronized void enter() {
 		/* Activates the state machine. */
+		if (timerService == null) {
+			throw new IllegalStateException("Timer service must be set.");
+		}
 		
 		if (getIsExecuting()) {
 			return;
@@ -169,6 +178,8 @@ public class Actuator_Component_2 implements IEventDriven {
 	private void clearInEvents() {
 		off = false;
 		on = false;
+		timeEvents[0] = false;
+		timeEvents[1] = false;
 	}
 	
 	private void microStep() {
@@ -192,6 +203,9 @@ public class Actuator_Component_2 implements IEventDriven {
 	
 	private void runCycle() {
 		/* Performs a 'run to completion' step. */
+		if (timerService == null) {
+			throw new IllegalStateException("Timer service must be set.");
+		}
 		
 		if (getIsExecuting()) {
 			return;
@@ -235,6 +249,21 @@ public class Actuator_Component_2 implements IEventDriven {
 		default:
 			return false;
 		}
+	}
+	
+	public synchronized void setTimerService(ITimerService timerService) {
+		this.timerService = timerService;
+	}
+	
+	public ITimerService getTimerService() {
+		return timerService;
+	}
+	
+	public synchronized void raiseTimeEvent(int eventID) {
+		inEventQueue.add(() -> {
+			timeEvents[eventID] = true;
+		});
+		runCycle();
 	}
 	
 	public Power power() {
@@ -287,14 +316,33 @@ public class Actuator_Component_2 implements IEventDriven {
 	/* Entry action for state '<Standby>'. */
 	private void entryAction__Actuator_Component_2___Standby_() {
 		/* Entry action for state '<Standby>'. */
+		timerService.setTimer(this, 0, (1l * 1000l), true);
 		setIsTriggered(false);
 		device.setFunctionFinished(false);
+	}
+	
+	/* Entry action for state '<InUse>'. */
+	private void entryAction__Actuator_Component_2___InUse_() {
+		/* Entry action for state '<InUse>'. */
+		timerService.setTimer(this, 1, (1l * 1000l), true);
 	}
 	
 	/* Entry action for state '<DeviceFunctioning>'. */
 	private void entryAction__Actuator_Component_2___InUse___Actuator_Receives_actuatingSignal_From_Controller___Actuating_Device___Actuator_actuates_device___DeviceFunctioning_() {
 		/* Entry action for state '<DeviceFunctioning>'. */
 		device.setActuated(true);
+	}
+	
+	/* Exit action for state '<Standby>'. */
+	private void exitAction__Actuator_Component_2___Standby_() {
+		/* Exit action for state '<Standby>'. */
+		timerService.unsetTimer(this, 0);
+	}
+	
+	/* Exit action for state '<InUse>'. */
+	private void exitAction__Actuator_Component_2___InUse_() {
+		/* Exit action for state '<InUse>'. */
+		timerService.unsetTimer(this, 1);
 	}
 	
 	/* Exit action for state '<DeviceFunctioning>'. */
@@ -313,6 +361,7 @@ public class Actuator_Component_2 implements IEventDriven {
 	/* 'default' enter sequence for state <InUse> */
 	private void enterSequence__Actuator_Component_2___InUse__default() {
 		/* 'default' enter sequence for state <InUse> */
+		entryAction__Actuator_Component_2___InUse_();
 		enterSequence__Actuator_Component_2___InUse___Actuator_Receives_actuatingSignal_From_Controller__default();
 	}
 	
@@ -363,12 +412,14 @@ public class Actuator_Component_2 implements IEventDriven {
 	private void exitSequence__Actuator_Component_2___Standby_() {
 		/* Default exit sequence for state <Standby> */
 		stateVector[0] = State.$NULLSTATE$;
+		exitAction__Actuator_Component_2___Standby_();
 	}
 	
 	/* Default exit sequence for state <InUse> */
 	private void exitSequence__Actuator_Component_2___InUse_() {
 		/* Default exit sequence for state <InUse> */
 		exitSequence__Actuator_Component_2___InUse___Actuator_Receives_actuatingSignal_From_Controller_();
+		exitAction__Actuator_Component_2___InUse_();
 	}
 	
 	/* Default exit sequence for state <Actuating_Device> */
@@ -405,9 +456,11 @@ public class Actuator_Component_2 implements IEventDriven {
 			break;
 		case _ACTUATOR_COMPONENT_2___INUSE___ACTUATOR_RECEIVES_ACTUATINGSIGNAL_FROM_CONTROLLER___ACTUATING_DEVICE___ACTUATOR_ACTUATES_DEVICE___DEVICEFUNCTIONING_:
 			exitSequence__Actuator_Component_2___InUse___Actuator_Receives_actuatingSignal_From_Controller___Actuating_Device___Actuator_actuates_device___DeviceFunctioning_();
+			exitAction__Actuator_Component_2___InUse_();
 			break;
 		case _ACTUATOR_COMPONENT_2___INUSE___ACTUATOR_RECEIVES_ACTUATINGSIGNAL_FROM_CONTROLLER___ERROR_HANDLER_:
 			exitSequence__Actuator_Component_2___InUse___Actuator_Receives_actuatingSignal_From_Controller___Error_Handler_();
+			exitAction__Actuator_Component_2___InUse_();
 			break;
 		case _ACTUATOR_COMPONENT_2___OFF_:
 			exitSequence__Actuator_Component_2___off_();
@@ -471,8 +524,9 @@ public class Actuator_Component_2 implements IEventDriven {
 		/* The reactions of state <Standby>. */
 		long transitioned_after = transitioned_before;
 		if (transitioned_after<0l) {
-			if (getIsTriggered()) {
+			if (((timeEvents[0]) && (getIsTriggered()))) {
 				exitSequence__Actuator_Component_2___Standby_();
+				timeEvents[0] = false;
 				enterSequence__Actuator_Component_2___InUse__default();
 				react(0l);
 				transitioned_after = 0l;
@@ -497,8 +551,9 @@ public class Actuator_Component_2 implements IEventDriven {
 		/* The reactions of state <InUse>. */
 		long transitioned_after = transitioned_before;
 		if (transitioned_after<0l) {
-			if (!(getIsTriggered())) {
+			if (((timeEvents[1]) && (!(getIsTriggered())))) {
 				exitSequence__Actuator_Component_2___InUse_();
+				timeEvents[1] = false;
 				enterSequence__Actuator_Component_2___Standby__default();
 				react(0l);
 				transitioned_after = 0l;

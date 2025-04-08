@@ -452,4 +452,19 @@ GeneratorModel for create::java {
             synchronized = true
         }
     }
+    
+    statechart Sensor_Component_Fire {
+
+        feature Outlet {
+            targetProject = PROJECT
+            targetFolder = FOLDER
+        }
+        feature Naming {
+            basePackage =  BASE_PACKAGE 
+        }
+        feature GeneralFeatures {
+            TimerService = true
+            synchronized = true
+        }
+    }
 }
