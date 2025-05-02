@@ -22,3 +22,10 @@ ReportFile.txt
 
 /src/main/resources/*.json
 /backup/
+/sloeber.ino.cpp
+/bin/
+
+
+iot-sc-template-library/src/*
+iot-sc-template-library/*
+Release/*

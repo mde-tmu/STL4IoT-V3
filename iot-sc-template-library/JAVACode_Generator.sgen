@@ -4,7 +4,7 @@ GeneratorModel for create::java {
 
 	const FOLDER : string = "src"
 	
-	const BASE_PACKAGE : string = "smarthub.java"
+	const BASE_PACKAGE : string = "alpha"
 
 	statechart Environment{
 		feature Outlet {
