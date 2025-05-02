@@ -52,10 +52,10 @@ static Power_Component power;
 
 
 //The setup function is called once at startup of the sketch
-const int ledPin = ;  // LED pin
-const int sensorPin = ;  // Sensor pin
+const int ledPin = 26;  // LED pin
+const int sensorPin = 23;  // Sensor pin
 
-const int ultrasoundSensorPin = ;
+const int ultrasoundSensorPin = 18;
 const int garageDoorPin = 25;
 
 
