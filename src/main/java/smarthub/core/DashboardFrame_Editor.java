@@ -31,7 +31,7 @@ public class DashboardFrame_Editor extends JFrame{
     
     public static JButton smartFire_switch, smartFire_snooze,
     				smartTV_switch, smartTV_use, smartTV_inputSource,
-    				smartLight_switch, smartLight_use, smartLight_brightness,
+    				smartLight_switch, smartLight_use, smartLight_brightness, light1_use, light2_use, light3_use,
     				smartMicrowave_switch, smartMicrowave_use, smartMicrowave_addTimer, smartMicrowave_resetTimer, smartMicrowave_startTimer, smartMicrowave_doorStatus,
     				smartGarageDoor_switch, smartGarageDoor_use, smartGarageDoor_block,
     				notifsViewButton,
@@ -335,6 +335,9 @@ public class DashboardFrame_Editor extends JFrame{
         //BUTTONS
         smartLight_switch = new JButton();
         smartLight_use = new JButton();
+        light1_use = new JButton();
+        light2_use = new JButton();
+        light3_use = new JButton();
         
         JSlider smartLight_led1 = new JSlider();
         smartLight_led1.setFocusable(true);
@@ -347,8 +350,11 @@ public class DashboardFrame_Editor extends JFrame{
         smartLightPanel.add(smartLight_switch);
         smartLightPanel.add(smartLight_use);
         smartLightPanel.add(smartLight_brightness);
-        smartLightPanel.add(smartLight_led1);
-        smartLightPanel.add(smartLight_led2);
+        smartLightPanel.add(light1_use);
+        smartLightPanel.add(light2_use);
+        smartLightPanel.add(light3_use);
+//        smartLightPanel.add(smartLight_led1);
+//        smartLightPanel.add(smartLight_led2);
 		
 		return smartLightPanel;
     }

@@ -625,7 +625,7 @@ public class FireAlarm_Unit implements ITimed, IEventDriven {
 		timer.setFinal_warning_period(8l);
 		message.setStatus("");
 		message.setSensor("");
-		mode.setPause_time(1l);
+		mode.setPause_time(5l);
 		alarm.setThreshold_reached(false);
 		alarm.setActivated(false);
 		sensors.setIndex(0l);

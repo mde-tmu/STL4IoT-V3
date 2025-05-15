@@ -339,6 +339,82 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		
 	}
 	
+	public static class System3 {
+		private SmartLightHUB parent;
+		
+		public System3(SmartLightHUB parent) {
+			this.parent = parent;
+		}
+		private boolean toggle;
+		
+		
+		public void raiseToggle() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					toggle = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
+		private boolean isON;
+		
+		
+		protected void raiseIsON() {
+			synchronized(parent) {
+				isON = true;
+				isONObservable.next(null);
+			}
+		}
+		
+		private Observable<Void> isONObservable = new Observable<Void>();
+		
+		public Observable<Void> getIsON() {
+			return isONObservable;
+		}
+		
+		private boolean isOFF;
+		
+		
+		protected void raiseIsOFF() {
+			synchronized(parent) {
+				isOFF = true;
+				isOFFObservable.next(null);
+			}
+		}
+		
+		private Observable<Void> isOFFObservable = new Observable<Void>();
+		
+		public Observable<Void> getIsOFF() {
+			return isOFFObservable;
+		}
+		
+		private boolean error;
+		
+		
+		public void raiseError() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					error = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
+		private boolean working;
+		
+		
+		public void raiseWorking() {
+			synchronized(parent) {
+				parent.inEventQueue.add(() -> {
+					working = true;
+				});
+				parent.runCycle();
+			}
+		}
+		
+	}
+	
 	protected HUB hUB;
 	
 	protected Power power;
@@ -348,6 +424,8 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	protected System1 system1;
 	
 	protected System2 system2;
+	
+	protected System3 system3;
 	
 	public enum State {
 		SMARTLIGHTHUBSYSTEM_1_0_HUBOFF,
@@ -359,11 +437,14 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM1_LED_LIGHT1_OFF,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_ON,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_OFF,
+		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON,
+		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT1,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT2,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_,
+		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_CONNECTED,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1,
@@ -372,10 +453,13 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING,
 		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR,
+		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3,
+		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_WORKING,
+		SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR,
 		$NULLSTATE$
 	};
 	
-	private final State[] stateVector = new State[6];
+	private final State[] stateVector = new State[8];
 	
 	private ITimerService timerService;
 	
@@ -414,7 +498,8 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		network = new Network(this);
 		system1 = new System1(this);
 		system2 = new System2(this);
-		for (int i = 0; i < 6; i++) {
+		system3 = new System3(this);
+		for (int i = 0; i < 8; i++) {
 			stateVector[i] = State.$NULLSTATE$;
 		}
 		
@@ -423,6 +508,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		/* Default init sequence for statechart SmartLightHUB */
 		setLED1(null);
 		setLED2(null);
+		setLED3(null);
 		setWiFi(null);
 		setInUSE(false);
 		setPowerManager(null);
@@ -466,7 +552,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	 * @see IStatemachine#isActive()
 	 */
 	public synchronized boolean isActive() {
-		return stateVector[0] != State.$NULLSTATE$||stateVector[1] != State.$NULLSTATE$||stateVector[2] != State.$NULLSTATE$||stateVector[3] != State.$NULLSTATE$||stateVector[4] != State.$NULLSTATE$||stateVector[5] != State.$NULLSTATE$;
+		return stateVector[0] != State.$NULLSTATE$||stateVector[1] != State.$NULLSTATE$||stateVector[2] != State.$NULLSTATE$||stateVector[3] != State.$NULLSTATE$||stateVector[4] != State.$NULLSTATE$||stateVector[5] != State.$NULLSTATE$||stateVector[6] != State.$NULLSTATE$||stateVector[7] != State.$NULLSTATE$;
 	}
 	
 	/** 
@@ -489,6 +575,9 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		system2.toggle = false;
 		system2.error = false;
 		system2.working = false;
+		system3.toggle = false;
+		system3.error = false;
+		system3.working = false;
 		timeEvents[0] = false;
 		timeEvents[1] = false;
 		timeEvents[2] = false;
@@ -528,6 +617,18 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		}
 		if (getStateConfVectorPosition()<2l) {
 			switch (stateVector[2]) {
+			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON:
+				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON_react(transitioned);
+				break;
+			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF:
+				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF_react(transitioned);
+				break;
+			default:
+				break;
+			}
+		}
+		if (getStateConfVectorPosition()<3l) {
+			switch (stateVector[3]) {
 			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR:
 				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator_react(transitioned);
 				break;
@@ -540,12 +641,15 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_:
 				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final__react(transitioned);
 				break;
+			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3:
+				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3_react(transitioned);
+				break;
 			default:
 				break;
 			}
 		}
-		if (getStateConfVectorPosition()<3l) {
-			switch (stateVector[3]) {
+		if (getStateConfVectorPosition()<4l) {
+			switch (stateVector[4]) {
 			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION:
 				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection_react(transitioned);
 				break;
@@ -556,8 +660,8 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 				break;
 			}
 		}
-		if (getStateConfVectorPosition()<4l) {
-			switch (stateVector[4]) {
+		if (getStateConfVectorPosition()<5l) {
+			switch (stateVector[5]) {
 			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING:
 				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working_react(transitioned);
 				break;
@@ -568,13 +672,25 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 				break;
 			}
 		}
-		if (getStateConfVectorPosition()<5l) {
-			switch (stateVector[5]) {
+		if (getStateConfVectorPosition()<6l) {
+			switch (stateVector[6]) {
 			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING:
-				smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working_react(transitioned);
+				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working_react(transitioned);
 				break;
 			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR:
-				smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error_react(transitioned);
+				transitioned = smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error_react(transitioned);
+				break;
+			default:
+				break;
+			}
+		}
+		if (getStateConfVectorPosition()<7l) {
+			switch (stateVector[7]) {
+			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_WORKING:
+				smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working_react(transitioned);
+				break;
+			case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR:
+				smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error_react(transitioned);
 				break;
 			default:
 				break;
@@ -617,15 +733,15 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			return stateVector[0] == State.SMARTLIGHTHUBSYSTEM_1_0_HUBOFF;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB:
 			return stateVector[0].ordinal() >= State.
-					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB.ordinal()&& stateVector[0].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR.ordinal();
+					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB.ordinal()&& stateVector[0].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR.ordinal();
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS:
 			return stateVector[0].ordinal() >= State.
-					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS.ordinal()&& stateVector[0].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_OFF.ordinal();
+					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS.ordinal()&& stateVector[0].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF.ordinal();
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_ALLSYSTEMSOFF:
 			return stateVector[0] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_ALLSYSTEMSOFF;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER:
 			return stateVector[0].ordinal() >= State.
-					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER.ordinal()&& stateVector[0].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_OFF.ordinal();
+					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER.ordinal()&& stateVector[0].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF.ordinal();
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM1_LED_LIGHT1_ON:
 			return stateVector[0] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM1_LED_LIGHT1_ON;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM1_LED_LIGHT1_OFF:
@@ -634,35 +750,48 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			return stateVector[1] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_ON;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_OFF:
 			return stateVector[1] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_OFF;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON:
+			return stateVector[2] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF:
+			return stateVector[2] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR:
-			return stateVector[2] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR;
+			return stateVector[3] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER:
-			return stateVector[2].ordinal() >= State.
-					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER.ordinal()&& stateVector[2].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_.ordinal();
+			return stateVector[3].ordinal() >= State.
+					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER.ordinal()&& stateVector[3].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3.ordinal();
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT1:
-			return stateVector[2] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT1;
+			return stateVector[3] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT1;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT2:
-			return stateVector[2] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT2;
+			return stateVector[3] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT2;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_:
-			return stateVector[2] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_;
+			return stateVector[3] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3:
+			return stateVector[3] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION:
-			return stateVector[3] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION;
+			return stateVector[4] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_CONNECTED:
-			return stateVector[3] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_CONNECTED;
+			return stateVector[4] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_CONNECTED;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1:
-			return stateVector[4].ordinal() >= State.
-					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1.ordinal()&& stateVector[4].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR.ordinal();
-		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING:
-			return stateVector[4] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING;
-		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR:
-			return stateVector[4] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR;
-		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2:
 			return stateVector[5].ordinal() >= State.
-					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2.ordinal()&& stateVector[5].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR.ordinal();
+					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1.ordinal()&& stateVector[5].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR.ordinal();
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING:
+			return stateVector[5] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR:
+			return stateVector[5] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2:
+			return stateVector[6].ordinal() >= State.
+					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2.ordinal()&& stateVector[6].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR.ordinal();
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING:
-			return stateVector[5] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING;
+			return stateVector[6] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR:
-			return stateVector[5] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR;
+			return stateVector[6] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3:
+			return stateVector[7].ordinal() >= State.
+					SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3.ordinal()&& stateVector[7].ordinal() <= State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR.ordinal();
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_WORKING:
+			return stateVector[7] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_WORKING;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR:
+			return stateVector[7] == State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR;
 		default:
 			return false;
 		}
@@ -701,6 +830,10 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	
 	public System2 system2() {
 		return system2;
+	}
+	
+	public System3 system3() {
+		return system3;
 	}
 	
 	
@@ -773,6 +906,20 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	public void setLED2(SmartLightSystem value) {
 		synchronized(SmartLightHUB.this) {
 			this.lED2 = value;
+		}
+	}
+	
+	private SmartLightSystem lED3;
+	
+	public synchronized SmartLightSystem getLED3() {
+		synchronized(SmartLightHUB.this) {
+			return lED3;
+		}
+	}
+	
+	public void setLED3(SmartLightSystem value) {
+		synchronized(SmartLightHUB.this) {
+			this.lED3 = value;
 		}
 	}
 	
@@ -891,6 +1038,20 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		getLED2().system().raiseOff();
 	}
 	
+	/* Entry action for state 'LED_Light3_ON'. */
+	private void entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON() {
+		/* Entry action for state 'LED_Light3_ON'. */
+		system3.raiseIsON();
+		getLED3().system().raiseOn();
+	}
+	
+	/* Entry action for state 'LED_Light3_OFF'. */
+	private void entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF() {
+		/* Entry action for state 'LED_Light3_OFF'. */
+		system3.raiseIsOFF();
+		getLED3().system().raiseOff();
+	}
+	
 	/* Entry action for state 'PowerConsumptionCalculator'. */
 	private void entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator() {
 		/* Entry action for state 'PowerConsumptionCalculator'. */
@@ -920,6 +1081,12 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		system2.raiseIsOFF();
 	}
 	
+	/* Entry action for state 'LED_Light3'. */
+	private void entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3() {
+		/* Entry action for state 'LED_Light3'. */
+		system3.raiseIsOFF();
+	}
+	
 	/* Entry action for state 'No Connection'. */
 	private void entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection() {
 		/* Entry action for state 'No Connection'. */
@@ -944,6 +1111,12 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private void entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2() {
 		/* Entry action for state 'LED2'. */
 		getLED2().enter();
+	}
+	
+	/* Entry action for state 'LED3'. */
+	private void entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3() {
+		/* Entry action for state 'LED3'. */
+		getLED3().enter();
 	}
 	
 	/* Exit action for state 'PowerConsumptionCalculator'. */
@@ -987,6 +1160,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_default();
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_default();
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_default();
+		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_default();
 	}
 	
 	/* 'default' enter sequence for state SmartLightHubSystemStatus */
@@ -1010,6 +1184,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager();
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System1_default();
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_default();
+		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_default();
 	}
 	
 	/* 'default' enter sequence for state LED_Light1_ON */
@@ -1044,12 +1219,28 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		stateConfVectorPosition = 1;
 	}
 	
+	/* 'default' enter sequence for state LED_Light3_ON */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON_default() {
+		/* 'default' enter sequence for state LED_Light3_ON */
+		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON();
+		stateVector[2] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* 'default' enter sequence for state LED_Light3_OFF */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF_default() {
+		/* 'default' enter sequence for state LED_Light3_OFF */
+		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF();
+		stateVector[2] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF;
+		stateConfVectorPosition = 2;
+	}
+	
 	/* 'default' enter sequence for state PowerConsumptionCalculator */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator_default() {
 		/* 'default' enter sequence for state PowerConsumptionCalculator */
 		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator();
-		stateVector[2] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR;
+		stateConfVectorPosition = 3;
 	}
 	
 	/* 'default' enter sequence for state IOT_EnergySaverManager */
@@ -1063,39 +1254,47 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light1_default() {
 		/* 'default' enter sequence for state LED_Light1 */
 		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light1();
-		stateVector[2] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT1;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT1;
+		stateConfVectorPosition = 3;
 	}
 	
 	/* 'default' enter sequence for state LED_Light2 */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light2_default() {
 		/* 'default' enter sequence for state LED_Light2 */
 		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light2();
-		stateVector[2] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT2;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT2;
+		stateConfVectorPosition = 3;
 	}
 	
 	/* Default enter sequence for final state */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final__default() {
 		/* Default enter sequence for final state */
-		stateVector[2] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_;
+		stateConfVectorPosition = 3;
+	}
+	
+	/* 'default' enter sequence for state LED_Light3 */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3_default() {
+		/* 'default' enter sequence for state LED_Light3 */
+		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3();
+		stateVector[3] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3;
+		stateConfVectorPosition = 3;
 	}
 	
 	/* 'default' enter sequence for state No Connection */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection_default() {
 		/* 'default' enter sequence for state No Connection */
 		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection();
-		stateVector[3] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION;
-		stateConfVectorPosition = 3;
+		stateVector[4] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION;
+		stateConfVectorPosition = 4;
 	}
 	
 	/* 'default' enter sequence for state Connected */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_Connected_default() {
 		/* 'default' enter sequence for state Connected */
 		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_Connected();
-		stateVector[3] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_CONNECTED;
-		stateConfVectorPosition = 3;
+		stateVector[4] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_CONNECTED;
+		stateConfVectorPosition = 4;
 	}
 	
 	/* 'default' enter sequence for state LED1 */
@@ -1108,15 +1307,15 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* 'default' enter sequence for state working */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working_default() {
 		/* 'default' enter sequence for state working */
-		stateVector[4] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING;
+		stateConfVectorPosition = 5;
 	}
 	
 	/* 'default' enter sequence for state error */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_error_default() {
 		/* 'default' enter sequence for state error */
-		stateVector[4] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_ERROR;
+		stateConfVectorPosition = 5;
 	}
 	
 	/* 'default' enter sequence for state LED2 */
@@ -1129,15 +1328,36 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* 'default' enter sequence for state working */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working_default() {
 		/* 'default' enter sequence for state working */
-		stateVector[5] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING;
-		stateConfVectorPosition = 5;
+		stateVector[6] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING;
+		stateConfVectorPosition = 6;
 	}
 	
 	/* 'default' enter sequence for state error */
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error_default() {
 		/* 'default' enter sequence for state error */
-		stateVector[5] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR;
-		stateConfVectorPosition = 5;
+		stateVector[6] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR;
+		stateConfVectorPosition = 6;
+	}
+	
+	/* 'default' enter sequence for state LED3 */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_default() {
+		/* 'default' enter sequence for state LED3 */
+		entryAction_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3();
+		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_default();
+	}
+	
+	/* 'default' enter sequence for state working */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working_default() {
+		/* 'default' enter sequence for state working */
+		stateVector[7] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_WORKING;
+		stateConfVectorPosition = 7;
+	}
+	
+	/* 'default' enter sequence for state error */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error_default() {
+		/* 'default' enter sequence for state error */
+		stateVector[7] = State.SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR;
+		stateConfVectorPosition = 7;
 	}
 	
 	/* 'default' enter sequence for region SmartLightHubSystem_1.0 */
@@ -1168,6 +1388,12 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_default() {
 		/* 'default' enter sequence for region System2 */
 		react_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2__entry_Default();
+	}
+	
+	/* 'default' enter sequence for region System3 */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_default() {
+		/* 'default' enter sequence for region System3 */
+		react_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3__entry_Default();
 	}
 	
 	/* 'default' enter sequence for region PowerConsumptionRegion */
@@ -1212,6 +1438,18 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		react_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status__entry_Default();
 	}
 	
+	/* 'default' enter sequence for region Light3Region */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_default() {
+		/* 'default' enter sequence for region Light3Region */
+		react_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region__entry_Default();
+	}
+	
+	/* 'default' enter sequence for region status */
+	private void enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_default() {
+		/* 'default' enter sequence for region status */
+		react_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status__entry_Default();
+	}
+	
 	/* Default exit sequence for state HubOff */
 	private void exitSequence_SmartLightHubSystem_1_0_HubOff() {
 		/* Default exit sequence for state HubOff */
@@ -1227,6 +1465,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion();
 		exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region();
 		exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region();
+		exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region();
 	}
 	
 	/* Default exit sequence for state AllSystemsOFF */
@@ -1241,6 +1480,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		/* Default exit sequence for state System_Manager */
 		exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System1();
 		exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2();
+		exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3();
 	}
 	
 	/* Default exit sequence for state LED_Light1_ON */
@@ -1271,11 +1511,25 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		stateConfVectorPosition = 1;
 	}
 	
+	/* Default exit sequence for state LED_Light3_ON */
+	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON() {
+		/* Default exit sequence for state LED_Light3_ON */
+		stateVector[2] = State.$NULLSTATE$;
+		stateConfVectorPosition = 2;
+	}
+	
+	/* Default exit sequence for state LED_Light3_OFF */
+	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF() {
+		/* Default exit sequence for state LED_Light3_OFF */
+		stateVector[2] = State.$NULLSTATE$;
+		stateConfVectorPosition = 2;
+	}
+	
 	/* Default exit sequence for state PowerConsumptionCalculator */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator() {
 		/* Default exit sequence for state PowerConsumptionCalculator */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.$NULLSTATE$;
+		stateConfVectorPosition = 3;
 		exitAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator();
 	}
 	
@@ -1289,66 +1543,87 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* Default exit sequence for state LED_Light1 */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light1() {
 		/* Default exit sequence for state LED_Light1 */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.$NULLSTATE$;
+		stateConfVectorPosition = 3;
 	}
 	
 	/* Default exit sequence for state LED_Light2 */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light2() {
 		/* Default exit sequence for state LED_Light2 */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.$NULLSTATE$;
+		stateConfVectorPosition = 3;
 	}
 	
 	/* Default exit sequence for final state. */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final_() {
 		/* Default exit sequence for final state. */
-		stateVector[2] = State.$NULLSTATE$;
-		stateConfVectorPosition = 2;
+		stateVector[3] = State.$NULLSTATE$;
+		stateConfVectorPosition = 3;
+	}
+	
+	/* Default exit sequence for state LED_Light3 */
+	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3() {
+		/* Default exit sequence for state LED_Light3 */
+		stateVector[3] = State.$NULLSTATE$;
+		stateConfVectorPosition = 3;
 	}
 	
 	/* Default exit sequence for state No Connection */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection() {
 		/* Default exit sequence for state No Connection */
-		stateVector[3] = State.$NULLSTATE$;
-		stateConfVectorPosition = 3;
+		stateVector[4] = State.$NULLSTATE$;
+		stateConfVectorPosition = 4;
 		exitAction_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection();
 	}
 	
 	/* Default exit sequence for state Connected */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_Connected() {
 		/* Default exit sequence for state Connected */
-		stateVector[3] = State.$NULLSTATE$;
-		stateConfVectorPosition = 3;
+		stateVector[4] = State.$NULLSTATE$;
+		stateConfVectorPosition = 4;
 		exitAction_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_Connected();
 	}
 	
 	/* Default exit sequence for state working */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working() {
 		/* Default exit sequence for state working */
-		stateVector[4] = State.$NULLSTATE$;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State.$NULLSTATE$;
+		stateConfVectorPosition = 5;
 	}
 	
 	/* Default exit sequence for state error */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_error() {
 		/* Default exit sequence for state error */
-		stateVector[4] = State.$NULLSTATE$;
-		stateConfVectorPosition = 4;
+		stateVector[5] = State.$NULLSTATE$;
+		stateConfVectorPosition = 5;
 	}
 	
 	/* Default exit sequence for state working */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working() {
 		/* Default exit sequence for state working */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
+		stateVector[6] = State.$NULLSTATE$;
+		stateConfVectorPosition = 6;
 	}
 	
 	/* Default exit sequence for state error */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error() {
 		/* Default exit sequence for state error */
-		stateVector[5] = State.$NULLSTATE$;
-		stateConfVectorPosition = 5;
+		stateVector[6] = State.$NULLSTATE$;
+		stateConfVectorPosition = 6;
+	}
+	
+	/* Default exit sequence for state working */
+	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working() {
+		/* Default exit sequence for state working */
+		stateVector[7] = State.$NULLSTATE$;
+		stateConfVectorPosition = 7;
+	}
+	
+	/* Default exit sequence for state error */
+	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error() {
+		/* Default exit sequence for state error */
+		stateVector[7] = State.$NULLSTATE$;
+		stateConfVectorPosition = 7;
 	}
 	
 	/* Default exit sequence for region SmartLightHubSystem_1.0 */
@@ -1381,6 +1656,16 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			break;
 		}
 		switch (stateVector[2]) {
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON();
+			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF();
+			break;
+		default:
+			break;
+		}
+		switch (stateVector[3]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator();
 			break;
@@ -1396,10 +1681,14 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final_();
 			exitAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager();
 			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3();
+			exitAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager();
+			break;
 		default:
 			break;
 		}
-		switch (stateVector[3]) {
+		switch (stateVector[4]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection();
 			break;
@@ -1409,7 +1698,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		default:
 			break;
 		}
-		switch (stateVector[4]) {
+		switch (stateVector[5]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working();
 			break;
@@ -1419,12 +1708,22 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		default:
 			break;
 		}
-		switch (stateVector[5]) {
+		switch (stateVector[6]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working();
 			break;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error();
+			break;
+		default:
+			break;
+		}
+		switch (stateVector[7]) {
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_WORKING:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working();
+			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error();
 			break;
 		default:
 			break;
@@ -1453,6 +1752,16 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			break;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM2_LED_LIGHT2_OFF:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_LED_Light2_OFF();
+			break;
+		default:
+			break;
+		}
+		switch (stateVector[2]) {
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON();
+			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF();
 			break;
 		default:
 			break;
@@ -1489,10 +1798,25 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		}
 	}
 	
+	/* Default exit sequence for region System3 */
+	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3() {
+		/* Default exit sequence for region System3 */
+		switch (stateVector[2]) {
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_ON:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON();
+			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_SMARTHUBSTATUSREGION_SMARTLIGHTHUBSYSTEMSTATUS_HUBSTATUSREGION_SYSTEM_MANAGER_SYSTEM3_LED_LIGHT3_OFF:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF();
+			break;
+		default:
+			break;
+		}
+	}
+	
 	/* Default exit sequence for region PowerConsumptionRegion */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion() {
 		/* Default exit sequence for region PowerConsumptionRegion */
-		switch (stateVector[2]) {
+		switch (stateVector[3]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_POWERCONSUMPTIONCALCULATOR:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator();
 			break;
@@ -1508,6 +1832,10 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final_();
 			exitAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager();
 			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3();
+			exitAction_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager();
+			break;
 		default:
 			break;
 		}
@@ -1516,7 +1844,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* Default exit sequence for region turningoff_device_overthreshold */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold() {
 		/* Default exit sequence for region turningoff_device_overthreshold */
-		switch (stateVector[2]) {
+		switch (stateVector[3]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT1:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light1();
 			break;
@@ -1526,6 +1854,9 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD__FINAL_:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final_();
 			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_POWERCONSUMPTIONREGION_IOT_ENERGYSAVERMANAGER_TURNINGOFF_DEVICE_OVERTHRESHOLD_LED_LIGHT3:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3();
+			break;
 		default:
 			break;
 		}
@@ -1534,7 +1865,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* Default exit sequence for region NetworkRegion */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion() {
 		/* Default exit sequence for region NetworkRegion */
-		switch (stateVector[3]) {
+		switch (stateVector[4]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_NETWORKREGION_NO_CONNECTION:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection();
 			break;
@@ -1549,7 +1880,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* Default exit sequence for region Light1Region */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region() {
 		/* Default exit sequence for region Light1Region */
-		switch (stateVector[4]) {
+		switch (stateVector[5]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT1REGION_LED1_STATUS_WORKING:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working();
 			break;
@@ -1564,12 +1895,27 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* Default exit sequence for region Light2Region */
 	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region() {
 		/* Default exit sequence for region Light2Region */
-		switch (stateVector[5]) {
+		switch (stateVector[6]) {
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_WORKING:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working();
 			break;
 		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT2REGION_LED2_STATUS_ERROR:
 			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error();
+			break;
+		default:
+			break;
+		}
+	}
+	
+	/* Default exit sequence for region Light3Region */
+	private void exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region() {
+		/* Default exit sequence for region Light3Region */
+		switch (stateVector[7]) {
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_WORKING:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working();
+			break;
+		case SMARTLIGHTHUBSYSTEM_1_0_SMARTLIGHTSHUB_LIGHT3REGION_LED3_STATUS_ERROR:
+			exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error();
 			break;
 		default:
 			break;
@@ -1585,7 +1931,11 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			if (power.getIndex()==2l) {
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light2_default();
 			} else {
-				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final__default();
+				if (power.getIndex()==3l) {
+					enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3_default();
+				} else {
+					enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold__final__default();
+				}
 			}
 		}
 	}
@@ -1611,13 +1961,22 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	/* Default react sequence for initial entry  */
 	private void react_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System1__entry_Default() {
 		/* Default react sequence for initial entry  */
+		getLED1().enter();
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System1_LED_Light1_ON_default();
 	}
 	
 	/* Default react sequence for initial entry  */
 	private void react_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2__entry_Default() {
 		/* Default react sequence for initial entry  */
+		getLED2().enter();
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_LED_Light2_ON_default();
+	}
+	
+	/* Default react sequence for initial entry  */
+	private void react_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3__entry_Default() {
+		/* Default react sequence for initial entry  */
+		getLED3().enter();
+		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON_default();
 	}
 	
 	/* Default react sequence for initial entry  */
@@ -1663,6 +2022,18 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working_default();
 	}
 	
+	/* Default react sequence for initial entry  */
+	private void react_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region__entry_Default() {
+		/* Default react sequence for initial entry  */
+		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_default();
+	}
+	
+	/* Default react sequence for initial entry  */
+	private void react_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status__entry_Default() {
+		/* Default react sequence for initial entry  */
+		enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working_default();
+	}
+	
 	private long react(long transitioned_before) {
 		/* State machine reactions. */
 		return transitioned_before;
@@ -1695,7 +2066,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB();
 				enterSequence_SmartLightHubSystem_1_0_HubOff_default();
 				react(0l);
-				transitioned_after = 5l;
+				transitioned_after = 7l;
 			}
 		}
 		/* If no transition was taken */
@@ -1738,7 +2109,7 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_AllSystemsOFF_default();
 				smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_react(0l);
-				transitioned_after = 1l;
+				transitioned_after = 2l;
 			}
 		}
 		/* If no transition was taken */
@@ -1782,14 +2153,8 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			if (system2.toggle) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_LED_Light2_ON();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_LED_Light2_OFF_default();
-				smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_react(0l);
 				transitioned_after = 1l;
 			}
-		}
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_react(transitioned_before);
 		}
 		return transitioned_after;
 	}
@@ -1801,8 +2166,40 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 			if ((system2.toggle || hUB.turnONSystems)) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_LED_Light2_OFF();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System2_LED_Light2_ON_default();
-				smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_react(0l);
 				transitioned_after = 1l;
+			}
+		}
+		return transitioned_after;
+	}
+	
+	private long smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON_react(long transitioned_before) {
+		/* The reactions of state LED_Light3_ON. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<2l) {
+			if (system3.toggle) {
+				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON();
+				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF_default();
+				smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_react(0l);
+				transitioned_after = 2l;
+			}
+		}
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_react(transitioned_before);
+		}
+		return transitioned_after;
+	}
+	
+	private long smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF_react(long transitioned_before) {
+		/* The reactions of state LED_Light3_OFF. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<2l) {
+			if ((system3.toggle || hUB.turnONSystems)) {
+				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_OFF();
+				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_System3_LED_Light3_ON_default();
+				smartLightHubSystem_1_0_SmartLightsHUB_SmartHubStatusRegion_SmartLightHubSystemStatus_HubStatusRegion_System_Manager_react(0l);
+				transitioned_after = 2l;
 			}
 		}
 		/* If no transition was taken */
@@ -1816,17 +2213,17 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private long smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator_react(long transitioned_before) {
 		/* The reactions of state PowerConsumptionCalculator. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
+		if (transitioned_after<3l) {
 			if (power.getThresholdReached()) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_default();
-				transitioned_after = 2l;
+				transitioned_after = 3l;
 			} else {
 				if (timeEvents[0]) {
 					exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator();
 					timeEvents[0] = false;
 					enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator_default();
-					transitioned_after = 2l;
+					transitioned_after = 3l;
 				}
 			}
 		}
@@ -1836,17 +2233,17 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private long smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_react(long transitioned_before) {
 		/* The reactions of state IOT_EnergySaverManager. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<2l) {
+		if (transitioned_after<3l) {
 			if (!(power.getThresholdReached())) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_PowerConsumptionCalculator_default();
-				transitioned_after = 2l;
+				transitioned_after = 3l;
 			} else {
 				if (((timeEvents[1]) && (power.getThresholdReached()))) {
 					exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager();
 					timeEvents[1] = false;
 					enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_default();
-					transitioned_after = 2l;
+					transitioned_after = 3l;
 				}
 			}
 		}
@@ -1880,15 +2277,26 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 		return smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_react(transitioned_before);
 	}
 	
+	private long smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_turningoff_device_overthreshold_LED_Light3_react(long transitioned_before) {
+		/* The reactions of state LED_Light3. */
+		long transitioned_after = transitioned_before;
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_PowerConsumptionRegion_IOT_EnergySaverManager_react(transitioned_before);
+		}
+		return transitioned_after;
+	}
+	
 	private long smartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection_react(long transitioned_before) {
 		/* The reactions of state No Connection. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<3l) {
+		if (transitioned_after<4l) {
 			if (((timeEvents[2]) && (getWiFi().getConnection()))) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection();
 				timeEvents[2] = false;
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_Connected_default();
-				transitioned_after = 3l;
+				transitioned_after = 4l;
 			}
 		}
 		return transitioned_after;
@@ -1897,12 +2305,12 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private long smartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_Connected_react(long transitioned_before) {
 		/* The reactions of state Connected. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<3l) {
+		if (transitioned_after<4l) {
 			if (((timeEvents[3]) && (!(getWiFi().getConnection())))) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_Connected();
 				timeEvents[3] = false;
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_NetworkRegion_No_Connection_default();
-				transitioned_after = 3l;
+				transitioned_after = 4l;
 			}
 		}
 		return transitioned_after;
@@ -1916,12 +2324,12 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private long smartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working_react(long transitioned_before) {
 		/* The reactions of state working. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<4l) {
+		if (transitioned_after<5l) {
 			if (system1.error) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_error_default();
-				smartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_react(4l);
-				transitioned_after = 4l;
+				smartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_react(5l);
+				transitioned_after = 5l;
 			}
 		}
 		/* If no transition was taken */
@@ -1935,12 +2343,12 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private long smartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_error_react(long transitioned_before) {
 		/* The reactions of state error. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<4l) {
+		if (transitioned_after<5l) {
 			if (system1.working) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_error();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_status_working_default();
-				smartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_react(4l);
-				transitioned_after = 4l;
+				smartLightHubSystem_1_0_SmartLightsHUB_Light1Region_LED1_react(5l);
+				transitioned_after = 5l;
 			}
 		}
 		/* If no transition was taken */
@@ -1953,24 +2361,18 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	
 	private long smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_react(long transitioned_before) {
 		/* The reactions of state LED2. */
-		long transitioned_after = transitioned_before;
-		/* If no transition was taken */
-		if (transitioned_after==transitioned_before) {
-			/* then execute local reactions. */
-			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_react(transitioned_before);
-		}
-		return transitioned_after;
+		return transitioned_before;
 	}
 	
 	private long smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working_react(long transitioned_before) {
 		/* The reactions of state working. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
+		if (transitioned_after<6l) {
 			if (system2.error) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error_default();
-				smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_react(5l);
-				transitioned_after = 5l;
+				smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_react(6l);
+				transitioned_after = 6l;
 			}
 		}
 		/* If no transition was taken */
@@ -1984,18 +2386,67 @@ public class SmartLightHUB implements ITimed, IEventDriven {
 	private long smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error_react(long transitioned_before) {
 		/* The reactions of state error. */
 		long transitioned_after = transitioned_before;
-		if (transitioned_after<5l) {
+		if (transitioned_after<6l) {
 			if (system2.working) {
 				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_error();
 				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_status_working_default();
-				smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_react(5l);
-				transitioned_after = 5l;
+				smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_react(6l);
+				transitioned_after = 6l;
 			}
 		}
 		/* If no transition was taken */
 		if (transitioned_after==transitioned_before) {
 			/* then execute local reactions. */
 			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_Light2Region_LED2_react(transitioned_before);
+		}
+		return transitioned_after;
+	}
+	
+	private long smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_react(long transitioned_before) {
+		/* The reactions of state LED3. */
+		long transitioned_after = transitioned_before;
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_react(transitioned_before);
+		}
+		return transitioned_after;
+	}
+	
+	private long smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working_react(long transitioned_before) {
+		/* The reactions of state working. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<7l) {
+			if (system3.error) {
+				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working();
+				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error_default();
+				smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_react(7l);
+				transitioned_after = 7l;
+			}
+		}
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_react(transitioned_before);
+		}
+		return transitioned_after;
+	}
+	
+	private long smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error_react(long transitioned_before) {
+		/* The reactions of state error. */
+		long transitioned_after = transitioned_before;
+		if (transitioned_after<7l) {
+			if (system3.working) {
+				exitSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_error();
+				enterSequence_SmartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_status_working_default();
+				smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_react(7l);
+				transitioned_after = 7l;
+			}
+		}
+		/* If no transition was taken */
+		if (transitioned_after==transitioned_before) {
+			/* then execute local reactions. */
+			transitioned_after = smartLightHubSystem_1_0_SmartLightsHUB_Light3Region_LED3_react(transitioned_before);
 		}
 		return transitioned_after;
 	}

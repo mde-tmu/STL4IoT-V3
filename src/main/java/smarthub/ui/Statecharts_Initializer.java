@@ -7,41 +7,27 @@ import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
-import com.yakindu.core.*;
-//import com.yakindu.core.rx.Observable;
-import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.*;
-//import java.math.*;
-import java.text.DecimalFormat;
-
-//FOR AUDIO
+import com.yakindu.core.ITimerService;
+import smarthub.core.*;
+import smarthub.java.*;
+import smarthub.java.SmartHubSystem.State;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-
-//FOR UI
-import java.awt.Color;
-import java.awt.GradientPaint;
-import java.awt.Window;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-//import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Timer;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
-
-import javax.swing.BorderFactory;
-import javax.swing.JFrame;
-
-import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.general.DefaultValueDataset;
-
-//Atomic Components
-//Smart System Java Code Imports
-import smarthub.core.*;
-import smarthub.java.*;
-import smarthub.java.SmartHubSystem.*;
-
 
 public class Statecharts_Initializer extends DashboardFrame_Editor {
     private Firestore db;
@@ -83,7 +69,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
             firebase_fire_alarm_snooze,
             firebase_door_blocked, firebase_status_door, firebase_garage_door_sync,
             firebase_TV_status_system, firebase_TV_usage_tv,
-            firebase_light_status_system, firebase_light_master_switch;
+            firebase_light_status_system, firebase_light_master_switch, light1_switch, light2_switch, light3_switch;
 
     protected String firebase_TV_tv_cable;
     protected Long light_brightness, firebase_light_brightness;
@@ -124,8 +110,8 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
     protected FireAlarm_Unit FireAlarm;
     protected TV_Unit TV;
-    protected LEDLight_Unit LED1, LED2;
-    protected SmartLightSystem Light1, Light2; //Each light system using IoT Template
+    protected LEDLight_Unit LED1, LED2, LED3;
+    protected SmartLightSystem Light1, Light2, Light3; //Each light system using IoT Template
     protected Microwave_Unit Microwave;
     protected GarageDoor_Unit GarageDoor;
 
@@ -193,8 +179,10 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         TV = new TV_Unit();
         LED1 = new LEDLight_Unit();
         LED2 = new LEDLight_Unit();
+        LED3 = new LEDLight_Unit();
         Light1 = new SmartLightSystem();
         Light2 = new SmartLightSystem();
+        Light3 = new SmartLightSystem();
         Microwave = new Microwave_Unit();
         GarageDoor = new GarageDoor_Unit();
 
@@ -266,9 +254,11 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         TV.setTimerService(new ScaledTimeTimerService(1.0));
         LED1.setTimerService(new ScaledTimeTimerService(1.0));
         LED2.setTimerService(new ScaledTimeTimerService(1.0));
+        LED3.setTimerService(new ScaledTimeTimerService(1.0));
 
         Light1.setTimerService(new ScaledTimeTimerService(1.0));
         Light2.setTimerService(new ScaledTimeTimerService(1.0));
+        Light3.setTimerService(new ScaledTimeTimerService(1.0));
 
         Microwave.setTimerService(new ScaledTimeTimerService(1.0));
 
@@ -279,7 +269,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         STV_Actuator.setTimerService(new ScaledTimeTimerService(1.0));
         SL_Actuator.setTimerService(new ScaledTimeTimerService(1.0));
         SMW_Actuator.setTimerService(new ScaledTimeTimerService(1.0));
-//		SGD_Actuator.setTimerService(new ScaledTimeTimerService(1.0));
+		SGD_Actuator.setTimerService(new ScaledTimeTimerService(1.0));
         MotionDetector_Actuator.setTimerService(new ScaledTimeTimerService(1.0));
 
         SF_Controller.setTimerService(new ScaledTimeTimerService(1.0));
@@ -344,9 +334,11 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSTV().setTV(TV);
         SmartHubSystem.getSL_HUB().setLED1(Light1);
         SmartHubSystem.getSL_HUB().setLED2(Light2);
+        SmartHubSystem.getSL_HUB().setLED3(Light3);
 
         SmartHubSystem.getSL_HUB().getLED1().setLights(LED1);
         SmartHubSystem.getSL_HUB().getLED2().setLights(LED2);
+        SmartHubSystem.getSL_HUB().getLED3().setLights(LED3);
 
         SmartHubSystem.getSMW().setMW(Microwave);
 
@@ -357,6 +349,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSTV().setActuator(STV_Actuator);
         SmartHubSystem.getSL_HUB().getLED1().setActuator(MotionDetector_Actuator);
         SmartHubSystem.getSL_HUB().getLED2().setActuator(MotionDetector_Actuator);
+        SmartHubSystem.getSL_HUB().getLED3().setActuator(MotionDetector_Actuator);
         SmartHubSystem.getSMW().setActuator(SMW_Actuator);
         SmartHubSystem.getSGD().setActuator(SGD_Actuator);
 
@@ -365,6 +358,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSTV().setController(STV_Controller);
         SmartHubSystem.getSL_HUB().getLED1().setController(MotionDetector_Controller);
         SmartHubSystem.getSL_HUB().getLED2().setController(MotionDetector_Controller);
+        SmartHubSystem.getSL_HUB().getLED3().setController(MotionDetector_Controller);
         SmartHubSystem.getSMW().setController(SMW_Controller);
         SmartHubSystem.getSGD().setController(SGD_Controller);
 
@@ -387,6 +381,12 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSL_HUB().getLED2().getMotionDetector().setSensor(US_Sensor);
         SmartHubSystem.getSL_HUB().getLED2().getMotionDetector().setPowerSupply(MotionDetector_Power);
 
+        SmartHubSystem.getSL_HUB().getLED3().setMotionDetector(US_MotionDetector);
+        SmartHubSystem.getSL_HUB().getLED3().getMotionDetector().setActuator(MotionDetector_Actuator);
+        SmartHubSystem.getSL_HUB().getLED3().getMotionDetector().setController(MotionDetector_Controller);
+        SmartHubSystem.getSL_HUB().getLED3().getMotionDetector().setSensor(US_Sensor);
+        SmartHubSystem.getSL_HUB().getLED3().getMotionDetector().setPowerSupply(MotionDetector_Power);
+
         SmartHubSystem.getSMW().setSensor(SMW_Sensor);
 
         SmartHubSystem.getSGD().setSensor(GD_MotionDetector);
@@ -400,6 +400,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSTV().setPower(STV_Power);
         SmartHubSystem.getSL_HUB().getLED1().setPower(SL_Power);
         SmartHubSystem.getSL_HUB().getLED2().setPower(SL_Power);
+        SmartHubSystem.getSL_HUB().getLED3().setPower(SL_Power);
         SmartHubSystem.getSMW().setPower(SMW_Power);
         SmartHubSystem.getSGD().setPower(SGD_Power);
 
@@ -408,6 +409,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSTV().setTemp(STV_Temperature);
         SmartHubSystem.getSL_HUB().getLED1().setTemp(SL_Temperature);
         SmartHubSystem.getSL_HUB().getLED2().setTemp(SL_Temperature);
+        SmartHubSystem.getSL_HUB().getLED3().setTemp(SL_Temperature);
         SmartHubSystem.getSMW().setTemp(SMW_Temperature);
         SmartHubSystem.getSGD().setTemp(SGD_Temperature);
 
@@ -418,6 +420,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         SmartHubSystem.getSL_HUB().setWiFi(SL_WiFi);
         SmartHubSystem.getSL_HUB().getLED1().setWiFi(SL_WiFi);
         SmartHubSystem.getSL_HUB().getLED2().setWiFi(SL_WiFi);
+        SmartHubSystem.getSL_HUB().getLED3().setWiFi(SL_WiFi);
         SmartHubSystem.getSMW().setWiFi(SMW_WiFi);
         SmartHubSystem.getSGD().setWiFi(SGD_WiFi);
 
@@ -745,6 +748,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
             SmartHubSystem.getSTV().system().raiseDisconnect_network();
             SmartHubSystem.getSL_HUB().getLED1().system().raiseDisconnect_network();
             SmartHubSystem.getSL_HUB().getLED2().system().raiseDisconnect_network();
+            SmartHubSystem.getSL_HUB().getLED3().system().raiseDisconnect_network();
             SmartHubSystem.getSMW().system().raiseDisconnect_network();
             SmartHubSystem.getSGD().system().raiseDisconnect_network();
             buttons[4].setText("Network ERROR! Please wait until system reconnects...");
@@ -971,6 +975,9 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         long 	sensor1 = new Random().nextInt(100),
                 sensor2 = new Random().nextInt(100),
                 sensor3 = new Random().nextInt(100);
+//        if (sys_fire_status){
+//            sensor1 = sensor2 = sensor3 = 0;
+//        }
 
 //        long 	sensor1 = 200,
 //                sensor2 = 60,
@@ -1014,17 +1021,21 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 //
 //        fireAlarm_status = SmartHubSystem.getSF().getActuator().getIsTriggered();
 //        System.out.println(fireAlarm_status);
-        if (sensor1 > 95 || sensor2 > 95 || sensor3 > 95) {
+
+        firebase_fire_alarm_snooze = Boolean.TRUE.equals(SmartFireSystemDB.get().get().getBoolean("pause"));
+        if (firebase_fire_alarm_snooze) {
+            SmartHubSystem.getSF().getFireAlarm().mode().raisePause();
+        }
+
+        int threshold = 60;
+        if ((sensor1 > threshold || sensor2 > threshold || sensor3 > threshold) && !firebase_fire_alarm_snooze) {
             clip.start();
         }
         else {
             clip.stop();
         }
-
-        firebase_fire_alarm_snooze = Boolean.TRUE.equals(SmartFireSystemDB.get().get().getBoolean("pause"));
-        if (firebase_fire_alarm_snooze) {
-            SmartFireSystemDB.update("pause", false);
-            SmartHubSystem.getSF().getFireAlarm().mode().raisePause();
+        if (firebase_fire_alarm_snooze){
+            clip.stop();
         }
         //smartFire_message.setText("Current Status: "+mode_status);
 
@@ -1281,8 +1292,11 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
         Light_usage = SmartHubSystem.getSL_HUB().getInUSE();
         String usage_status = "", system_status = "";
 
-        firebase_light_status_system = Boolean.TRUE.equals(SmartLightSystemDB.get().get().getBoolean("status_system"));;
-        firebase_light_master_switch = Boolean.TRUE.equals(SmartLightSystemDB.get().get().getBoolean("status_light"));;
+        firebase_light_status_system = Boolean.TRUE.equals(SmartLightSystemDB.get().get().getBoolean("status_system"));
+        firebase_light_master_switch = Boolean.TRUE.equals(SmartLightSystemDB.get().get().getBoolean("status_light"));
+//        light1_switch = Boolean.TRUE.equals(SmartLightSystemDB.get().get().getBoolean("Light1_status"));
+//        light2_switch = Boolean.TRUE.equals(SmartLightSystemDB.get().get().getBoolean("Light2_status"));
+//        light3_switch = Boolean.TRUE.equals(SmartLightSystemDB.get().get().getBoolean("Light3_status"));
         try {
             firebase_light_brightness = SmartLightSystemDB.get().get().getLong("brightness_level");
         }
@@ -1322,6 +1336,12 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
             smartLight_use.setEnabled(true);
             smartLight_use.setText(usage_status);
+            light1_use.setEnabled(true);
+            light1_use.setText("Light1: ON");
+            light2_use.setEnabled(true);
+            light2_use.setText("Light2: ON");
+            light3_use.setEnabled(true);
+            light3_use.setText("Light3: ON");
             smartLightPanel.setBackground(Color.green);
 
 			/*var brightness_level = SmartHubSystem.getSL().getLights().brightness().getLevel();
@@ -1343,6 +1363,12 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
             smartLightPanel.setBackground(Color.gray.brighter());
             smartLight_use.setEnabled(false);
             smartLight_use.setText("Data Currently Not Available");
+            light1_use.setEnabled(false);
+            light1_use.setText("Data Currently Not Available");
+            light2_use.setEnabled(false);
+            light2_use.setText("Data Currently Not Available");
+            light3_use.setEnabled(false);
+            light3_use.setText("Data Currently Not Available");
             smartLight_brightness.setEnabled(false);
         }
 
@@ -1385,7 +1411,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
 
         String usage_status = "", system_status = "";
 
-        //Lights Usage Status
+        //Microwave Usage Status
         if(Microwave_status) {
             smartMicrowave_addTimer.setVisible(true);
             smartMicrowave_startTimer.setVisible(true);
@@ -1805,6 +1831,12 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
                         LogReport.add("["+formatter.format(new Date())+")]: Smart Fire System Switch Toggled !\n");
 
                         SmartFireSystemDB.update("pause", true);
+                        try {
+                            Thread.sleep(50000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        SmartFireSystemDB.update("pause", false);
                     }
                 });
                 anti_freeze.start();
@@ -1965,6 +1997,24 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
                 });
                 anti_freeze.start();
             }
+        });
+
+        light1_use.addActionListener(e -> {
+            anti_freeze = new Thread(() -> {
+                playSound("Audio/click.wav");
+                boolean Switch = SmartHubSystem.getSL_HUB().getLED1().system().getIsOn();
+
+                if(Switch) {
+                    SmartHubSystem.getSL_HUB().getLED1().system().raiseOff();
+                    LogReport.add("["+formatter.format(new Date())+")]: Light1 is switched off!\n");
+                }
+                else {
+                    SmartHubSystem.getSL_HUB().getLED1().system().raiseOn();
+                    LogReport.add("["+formatter.format(new Date())+")]: Light1 is switch on!\n");
+                }
+                SmartLightSystemDB.update("Light1_status", !Switch);
+            });
+            anti_freeze.start();
         });
 //        smartLight_use.addActionListener(e -> {
 //            playSound("Audio/click.wav");
@@ -2249,8 +2299,7 @@ public class Statecharts_Initializer extends DashboardFrame_Editor {
     /**
      * END OF FILE
      *
-     * Author: Clyde Rempillo
+     * Author: Clyde Rempillo & Zenan Zha
      * Toronto Metropolitan University
-     * Written in January 2023
      * **/
 }

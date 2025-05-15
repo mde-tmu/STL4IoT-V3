@@ -54,7 +54,7 @@ public class Sensor_Component_Fire implements ITimed, IEventDriven {
 		setSignalSentToController(false);
 		setSensorData(0l);
 		setEnvironmentData(0l);
-		setThreshold(50l);
+		setThreshold(90l);
 		setTestData(10l);
 		
 		isExecuting = false;
